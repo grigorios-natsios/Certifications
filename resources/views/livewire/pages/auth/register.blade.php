@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Models\Organization;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -14,6 +15,13 @@ new #[Layout('layouts.guest')] class extends Component
     public string $email = '';
     public string $password = '';
     public string $password_confirmation = '';
+    public ?int $organization_id = null;
+    public $organizations = [];
+
+    public function mount(): void
+    {
+        $this->organizations = Organization::all(); // ✅ Φόρτωσε όλα τα orgs
+    }
 
     /**
      * Handle an incoming registration request.
@@ -24,6 +32,7 @@ new #[Layout('layouts.guest')] class extends Component
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
+            'organization_id' => ['required', 'exists:organizations,id'],
         ]);
 
         $validated['password'] = Hash::make($validated['password']);
@@ -38,6 +47,18 @@ new #[Layout('layouts.guest')] class extends Component
 
 <div>
     <form wire:submit="register">
+
+        <div class="mt-4">
+            <x-input-label for="organization_id" :value="__('Organization')" />
+            <select wire:model="organization_id" id="organization_id" name="organization_id"
+                    class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                <option value="">-- Επιλέξτε Οργανισμό --</option>
+                @foreach($organizations as $org)
+                    <option value="{{ $org->id }}">{{ $org->name }}</option>
+                @endforeach
+            </select>
+            <x-input-error :messages="$errors->get('organization_id')" class="mt-2" />
+        </div>
         <!-- Name -->
         <div>
             <x-input-label for="name" :value="__('Name')" />

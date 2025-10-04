@@ -15,10 +15,15 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
+            $table->string('role')->default('admin');
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
             $table->timestamps();
+            $table->foreignId('organization_id')
+              ->nullable()
+              ->constrained()
+              ->onDelete('cascade');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
