@@ -13,7 +13,6 @@ class ClientController extends Controller
         $request->validate([
             'file' => 'required|file|mimes:csv,txt',
         ]);
-    
 
         $file = $request->file('file')->getPathname();
         $organizationId = Auth::user()->organization_id;

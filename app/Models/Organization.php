@@ -22,4 +22,9 @@ class Organization extends Model
     {
         return $this->hasMany(Client::class);
     }
+
+    public function certificates()
+    {
+        return $this->hasMany(Certificate::class);
+    }
 }

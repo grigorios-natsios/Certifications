@@ -53,5 +53,16 @@
                 <livewire:users-form />
             </div>
         </div>
+
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-6">
+                <h4 class="text-lg font-semibold mb-4">Add New certificate</h4>
+                <livewire:certificate-builder />
+            </div>
+        </div>
+
+        @section('content')
+            ('certificate-builder')
+            @endsection
     </div>
 </x-app-layout>

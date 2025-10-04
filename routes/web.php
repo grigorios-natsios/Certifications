@@ -17,6 +17,11 @@ Route::middleware(['auth', 'verified'])->get('/dashboard', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/clients/import', [ClientController::class, 'import'])->name('clients.import');
+
+    Route::get('/certificates/builder', function () {
+        return view('certificates.builder');
+    })->name('certificates.builder');
+
 });
 
 
