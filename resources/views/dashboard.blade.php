@@ -34,25 +34,9 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-6">
                 <h3 class="text-lg font-semibold mb-2">Organization: {{ $organization->name }}</h3>
-
-                <h4 class="font-medium mb-2">Users</h4>
-                <ul class="list-disc list-inside space-y-1">
-                    @foreach($organization->users as $user)
-                        <li class="text-gray-700 dark:text-gray-200">
-                            {{ $user->name }} ({{ $user->email }})
-                        </li>
-                    @endforeach
-                </ul>
             </div>
         </div>
 
-        <!-- Livewire Users Form -->
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-6">
-                <h4 class="text-lg font-semibold mb-4">Add New User</h4>
-                <livewire:users-form />
-            </div>
-        </div>
 
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-6">

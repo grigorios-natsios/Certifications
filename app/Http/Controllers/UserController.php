@@ -3,41 +3,71 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\User;
-use Illuminate\Support\Facades\Auth;
+use App\Services\UserService;
+use Yajra\DataTables\DataTables;
 
 class UserController extends Controller
 {
-    public function __construct()
+    protected $service;
+
+    public function __construct(UserService $service)
     {
-        $this->middleware('auth'); // μόνο για συνδεδεμένους χρήστες
+        $this->service = $service;
     }
 
-    // Δείχνει όλους τους users του Organization του logged-in user
     public function index()
     {
-        $organization = Auth::user()->organization;
-        $users = $organization->users; // παίρνει μόνο τους users του οργανισμού
-        return view('users.index', compact('users'));
+        return view('users');
     }
 
-    // Προβολή συγκεκριμένου χρήστη
-    public function show(User $user)
+    public function getUsers(Request $request)
     {
-        $this->authorize('view', $user); // αν χρησιμοποιείς Policy
-        return view('users.show', compact('user'));
+        $query = $this->service->listUsers($request->only(['role', 'searchEmail']));
+
+        return DataTables::of($query)
+            ->addColumn('actions', function ($row) {
+                return '
+                    <button class="editUser bg-blue-500 text-white px-2 py-1 rounded" data-id="'.$row->id.'">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="deleteUser bg-red-600 text-white px-2 py-1 rounded"data-id="'.$row->id.'">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                ';
+            })
+            ->rawColumns(['actions'])
+            ->make(true);
     }
 
-    protected function create(array $data)
+    public function store(Request $request)
     {
-        $defaultOrg = \App\Models\Organization::first();
-
-        return \App\Models\User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => \Hash::make($data['password']),
-            'organization_id' => $defaultOrg->id,
+        $validated = $request->validate([
+            'name' => 'required',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|string|confirmed|min:8',
         ]);
+
+        $this->service->createUser($validated);
+
+        return response()->json(['success' => true, 'message' => 'Ο χρήστης προστέθηκε επιτυχώς!']);
     }
 
+    public function update(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'name' => 'required',
+            'email' => 'required|email|unique:users,email,' . $id,
+            'password' => 'nullable|string|confirmed|min:8',
+        ]);
+
+        $this->service->updateUser($id, $validated);
+
+        return response()->json(['success' => true, 'message' => 'Ο χρήστης ενημερώθηκε επιτυχώς!']);
+    }
+
+    public function destroy($id)
+    {
+        $this->service->deleteUser($id);
+        return response()->json(['success' => true, 'message' => 'Ο χρήστης διαγράφηκε επιτυχώς!']);
+    }
 }
