@@ -15,11 +15,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('dashboard', compact('organization'));
     })->name('dashboard');
 
-    Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::get('/users/data', [UserController::class, 'getUsers'])->name('users.data');
-    Route::post('/users', [UserController::class, 'store'])->name('users.store');
-    Route::put('/users/{id}', [UserController::class, 'update'])->name('users.update');
-    Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
+    Route::resource('users', UserController::class);
 
     Route::post('/clients/import', [ClientController::class, 'import'])->name('clients.import');
     Route::get('/certificates/builder', function () {
