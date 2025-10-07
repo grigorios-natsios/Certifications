@@ -31,13 +31,13 @@ new class extends Component
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Dashboard') }}
+                        {{ __('Διαχείρηση') }}
                     </x-nav-link>
                 </div>
 
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                     <x-nav-link :href="route('users.index')">
-                        {{ __('Users') }}
+                        {{ __('Χρήστες') }}
                     </x-nav-link>
                 </div>
             </div>
@@ -59,13 +59,16 @@ new class extends Component
 
                     <x-slot name="content">
                         <x-dropdown-link :href="route('profile')" wire:navigate>
-                            {{ __('Profile') }}
+                            {{ __('Προφίλ') }}
+                        </x-dropdown-link>
+                        <x-dropdown-link :href="route('users.index')" wire:navigate>
+                            {{ __('Χρήστες') }}
                         </x-dropdown-link>
 
                         <!-- Authentication -->
                         <button wire:click="logout" class="w-full text-start">
                             <x-dropdown-link>
-                                {{ __('Log Out') }}
+                                {{ __('Αποσύνδεση') }}
                             </x-dropdown-link>
                         </button>
                     </x-slot>
