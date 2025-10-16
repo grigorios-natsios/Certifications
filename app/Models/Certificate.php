@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Certificate extends Model
 {
@@ -13,5 +14,10 @@ class Certificate extends Model
     public function organization()
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(CertificateCategory::class, 'category_id');
     }
 }

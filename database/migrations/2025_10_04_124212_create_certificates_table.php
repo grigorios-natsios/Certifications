@@ -17,6 +17,10 @@ return new class extends Migration
             $table->text('html_content');   // το HTML που δημιουργεί ο editor
             $table->longText('json_content')->nullable(); // το JSON για επεξεργασία
             $table->foreignId('organization_id')->constrained()->onDelete('cascade');
+            $table->foreignId('category_id')
+                  ->nullable()
+                  ->constrained('certificate_categories') // εδώ δίνουμε τον σωστό πίνακα
+                  ->nullOnDelete();
             $table->timestamps();
         });
     }

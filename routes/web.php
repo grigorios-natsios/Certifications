@@ -18,6 +18,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/users/data', [UserController::class, 'getUsers'])->name('users.data');
     Route::resource('users', UserController::class);
 
+    Route::get('/certificate-categories', function () {
+        return view('certificate-categories');
+    })->name('certificate-categories.index');
+
     Route::post('/clients/import', [ClientController::class, 'import'])->name('clients.import');
     Route::get('/certificates/builder', function () {
         return view('certificates.builder');
