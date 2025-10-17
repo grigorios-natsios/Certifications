@@ -7,11 +7,11 @@
 
     <div class="py-12 space-y-6">
         <!-- Οργανισμός του χρήστη -->
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        {{-- <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-6">
                 <h3 class="text-lg font-semibold mb-2">Εταιρία: {{ $organization->name }}</h3>
             </div>
-        </div>
+        </div> --}}
 
         <!-- CSV Import Form -->
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
@@ -38,40 +38,58 @@
         </div>
 
         <!-- Προσθήκη & Φίλτρα -->
-        <div class="container mx-auto p-6">
-            <div class="flex space-x-4 mb-4">
-                <button id="addClientBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                    + Προσθήκη Πελάτη
-                </button>
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="container mx-auto p-6">
+                <div class="flex space-x-4 mb-4">
+                    <button id="addClientBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                        + Προσθήκη Πελάτη
+                    </button>
 
-                <select id="categoryFilter" class="border p-2 rounded w-1/4">
-                    <option value="">{{ __('Όλες οι κατηγορίες') }}</option>
-                    @foreach($categories as $cat)
-                        <option value="{{ $cat->id }}">{{ $cat->name }}</option>
-                    @endforeach
-                </select>
+                    <select id="categoryFilter" class="border p-2 rounded w-1/4">
+                        <option value="">{{ __('Όλες οι κατηγορίες') }}</option>
+                        @foreach($categories as $cat)
+                            <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                        @endforeach
+                    </select>
 
-                <input type="text" id="searchName" placeholder="{{ __('Αναζήτηση με Όνομα') }}"
-                    class="border p-2 rounded w-1/4" />
+                    <input type="text" id="searchName" placeholder="{{ __('Αναζήτηση με Όνομα') }}"
+                        class="border p-2 rounded w-1/4" />
 
-                <button id="filterBtn" class="bg-gray-700 text-white px-4 py-2 rounded">
-                    {{ __('Φιλτράρισμα') }}
-                </button>
+                    <button id="filterBtn" class="bg-gray-700 text-white px-4 py-2 rounded">
+                        {{ __('Φιλτράρισμα') }}
+                    </button>
+                </div>
+                <div class="flex space-x-4 mb-4">
+                    <button id="addClientBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                        + Προσθήκη Πελάτη
+                    </button>
+
+                    <button id="deleteSelectedBtn" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                        Διαγραφή Επιλεγμένων
+                    </button>
+
+                    <button id="assignCategoryBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                        Ανάθεση Κατηγορίας
+                    </button>
+                </div>
+
+                <!-- DataTable -->
+                <table id="clientsTable" class="min-w-full text-left text-sm border rounded">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-4 py-2">
+                                <input type="checkbox" id="selectAll">
+                            </th>
+                            <th class="px-4 py-2">{{ __('ID') }}</th>
+                            <th class="px-4 py-2">{{ __('Όνομα') }}</th>
+                            <th class="px-4 py-2">{{ __('Email') }}</th>
+                            <th class="px-4 py-2">{{ __('Κατηγορία') }}</th>
+                            <th class="px-4 py-2">{{ __('Ημερομηνία Δημιουργίας') }}</th>
+                            <th class="px-4 py-2">{{ __('Ενέργειες') }}</th>
+                        </tr>
+                    </thead>
+                </table>
             </div>
-
-            <!-- DataTable -->
-            <table id="clientsTable" class="min-w-full text-left text-sm border rounded">
-                <thead class="bg-gray-100">
-                    <tr>
-                        <th class="px-4 py-2">{{ __('ID') }}</th>
-                        <th class="px-4 py-2">{{ __('Όνομα') }}</th>
-                        <th class="px-4 py-2">{{ __('Email') }}</th>
-                        <th class="px-4 py-2">{{ __('Κατηγορία') }}</th>
-                        <th class="px-4 py-2">{{ __('Ημερομηνία Δημιουργίας') }}</th>
-                        <th class="px-4 py-2">{{ __('Ενέργειες') }}</th>
-                    </tr>
-                </thead>
-            </table>
         </div>
 
         <!-- Modal Πελάτη -->
@@ -124,6 +142,14 @@
                         }
                     },
                     columns: [
+                        {
+                            data: 'id',
+                            render: function(data) {
+                                return `<input type="checkbox" class="selectClient" value="${data}">`;
+                            },
+                            orderable: false,
+                            searchable: false
+                        },
                         { data: 'id' },
                         { data: 'name' },
                         { data: 'email' },
@@ -172,6 +198,20 @@
                     }
                 });
 
+               $('#deleteSelectedBtn').click(function() {
+                    let ids = getSelectedIds();
+                    if(ids.length === 0) { alert('Επέλεξε τουλάχιστον έναν πελάτη'); return; }
+
+                    console.log('Selected IDs:', ids);
+                    // εδώ κάνεις μαζική διαγραφή ή άλλη ενέργεια μέσω AJAX
+                });
+
+                $('#selectAll').on('change', function() {
+                    $('.selectClient').prop('checked', $(this).prop('checked'));
+                });
+
+
+
                 // Αποθήκευση (Create/Update)
                 $('#clientForm').submit(function(e){
                     e.preventDefault();
@@ -193,6 +233,14 @@
                         }
                     });
                 });
+
+                function getSelectedIds() {
+                    let ids = [];
+                    $('.selectClient:checked').each(function() {
+                        ids.push($(this).val());
+                    });
+                    return ids;
+                }
             });
         </script>
     @endpush
