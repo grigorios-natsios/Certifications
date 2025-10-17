@@ -9,11 +9,15 @@ Route::view('/', 'welcome');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     
-    Route::get('/dashboard', function () {
-        $user = Auth::user();
-        $organization = $user->organization()->with('users')->first();
-        return view('dashboard', compact('organization'));
-    })->name('dashboard');
+    // Route::get('/dashboard', function () {
+    //     $user = Auth::user();
+    //     $organization = $user->organization()->with('users')->first();
+    //     return view('dashboard', compact('organization'));
+    // })->name('dashboard');
+
+    Route::resource('clients', ClientController::class);
+    Route::get('dashboard', [ClientController::class, 'index'])->name('dashboard');
+    Route::get('data', [ClientController::class, 'datatable'])->name('clients.data');
 
     Route::get('/users/data', [UserController::class, 'getUsers'])->name('users.data');
     Route::resource('users', UserController::class);

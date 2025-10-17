@@ -10,10 +10,15 @@ class Client extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'email', 'organization_id'];
+    protected $fillable = ['name', 'email', 'organization_id', 'certificate_category_id'];
 
     public function organization()
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    public function certificateCategory()
+    {
+        return $this->belongsTo(CertificateCategory::class);
     }
 }

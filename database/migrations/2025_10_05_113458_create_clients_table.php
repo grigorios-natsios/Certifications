@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('organization_id')->constrained()->onDelete('cascade');
             $table->string('name');
             $table->string('email')->nullable();
+            $table->foreignId('certificate_category_id')->nullable()->constrained()->onDelete('set null');
             $table->timestamps();
         });
     }

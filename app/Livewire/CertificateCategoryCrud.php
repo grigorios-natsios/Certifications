@@ -4,10 +4,13 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\CertificateCategory;
+use Livewire\WithFileUploads;
+use Illuminate\Support\Facades\Storage;
 
 class CertificateCategoryCrud extends Component
 {
-    public $categories, $name, $category_id;
+    use WithFileUploads;
+    public $categories, $name, $svg, $category_id;
     public $showModal = false;
 
     public function render()
@@ -19,6 +22,7 @@ class CertificateCategoryCrud extends Component
     private function resetInputFields()
     {
         $this->name = '';
+        $this->svg = null;
         $this->category_id = null;
     }
 
@@ -35,8 +39,21 @@ class CertificateCategoryCrud extends Component
 
     public function store()
     {
-        $this->validate(['name' => 'required|string|max:255']);
-        CertificateCategory::create(['name' => $this->name]);
+        $this->validate([
+            'name' => 'required|string|max:255',
+            'svg'  => 'nullable|file|mimes:svg,xml|max:2048',
+        ]);
+
+        $path = null;
+        if ($this->svg) {
+            $path = $this->svg->store('certificates', 'public');
+        }
+        
+        CertificateCategory::create([
+            'name' => $this->name,
+            'svg_path' => $path,
+        ]);
+
         session()->flash('message', 'Category Created Successfully.');
         $this->closeModal();
     }
@@ -51,9 +68,23 @@ class CertificateCategoryCrud extends Component
 
     public function update()
     {
-        $this->validate(['name' => 'required|string|max:255']);
-        if ($this->category_id) {
-            CertificateCategory::find($this->category_id)->update(['name' => $this->name]);
+        $this->validate([
+            'name' => 'required|string|max:255',
+            'svg'  => 'nullable|file|mimes:svg,xml|max:2048',
+        ]);
+
+        $category = CertificateCategory::find($this->category_id);
+        if ($category) {
+            $path = $category->svg_path;
+            if ($this->svg) {
+                $path = $this->svg->store('certificates', 'public');
+            }
+
+            $category->update([
+                'name' => $this->name,
+                'svg_path' => $path,
+            ]);
+
             session()->flash('message', 'Category Updated Successfully.');
             $this->closeModal();
         }
@@ -61,8 +92,20 @@ class CertificateCategoryCrud extends Component
 
     public function delete($id)
     {
-        CertificateCategory::find($id)->delete();
-        session()->flash('message', 'Category Deleted Successfully.');
+        $category = CertificateCategory::find($id);
+        
+        if (!$category) return;
+
+        // Διαγραφή SVG αν υπάρχει
+        if ($category->svg_path && \Storage::disk('public')->exists($category->svg_path)) {
+            \Storage::disk('public')->delete($category->svg_path);
+        }
+
+        // Διαγραφή κατηγορίας
+        $category->delete();
+
+        session()->flash('message', 'Category and SVG deleted successfully.');
     }
+
 }
 

@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Client;
+use App\Models\CertificateCategory;
+use App\Models\Organization;
 use Illuminate\Support\Facades\Auth;
+use Yajra\DataTables\DataTables;
 
 class ClientController extends Controller
 {
@@ -46,4 +49,93 @@ class ClientController extends Controller
 
         return back()->with('message', 'Clients imported successfully!');
     }
+
+    public function index()
+    {
+       
+        $user = Auth::user();
+        $organization = $user->organization()->with('users')->first();
+        $categories = CertificateCategory::all();
+
+        return view('dashboard', compact('categories', 'organization'));
+    }
+
+    public function datatable(Request $request)
+    {
+        $query = Client::with('certificateCategory')
+            ->where('organization_id', Auth::user()->organization_id);
+
+        if ($request->certificate_category_id) {
+            $query->where('certificate_category_id', $request->certificate_category_id);
+        }
+
+        if ($request->searchName) {
+            $query->where('name', 'like', "%{$request->searchName}%");
+        }
+
+        return DataTables::of($query)
+            ->addColumn('category', fn($client) => $client->certificateCategory?->name)
+            ->addColumn('actions', function ($client) {
+                $edit = '<button class="editClient px-2 py-1 bg-yellow-500 text-white rounded" data-id="'.$client->id.'">Edit</button>';
+                $delete = '<button class="deleteClient px-2 py-1 bg-red-500 text-white rounded" data-id="'.$client->id.'">Delete</button>';
+                return $edit.' '.$delete;
+            })
+            ->rawColumns(['actions'])
+            ->make(true);
+    }
+
+
+    public function create()
+    {
+        $organizations = Organization::all();
+        $categories = CertificateCategory::all();
+        return view('clients.create', compact('organizations', 'categories'));
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'certificate_category_id' => 'nullable|exists:certificate_categories,id',
+        ]);
+
+        // Ο οργανισμός πάντα από τον logged-in user
+        $validated['organization_id'] = Auth::user()->organization_id;
+
+        Client::create($validated);
+
+        return response()->json(['message' => 'Client created successfully']);
+    }
+
+
+    public function edit(Client $client)
+    {
+        $organizations = Organization::all();
+        $categories = CertificateCategory::all();
+        return view('clients.edit', compact('client', 'organizations', 'categories'));
+    }
+
+    public function update(Request $request, Client $client)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'certificate_category_id' => 'nullable|exists:certificate_categories,id',
+        ]);
+
+        $validated['organization_id'] = Auth::user()->organization_id;
+
+        $client->update($validated);
+
+        return response()->json(['message' => 'Client updated successfully']);
+    }
+
+    public function destroy(Client $client)
+    {
+        $client->delete();
+        return redirect()->route('clients.index')->with('success', 'Client deleted successfully');
+    }
+
+    
 }
