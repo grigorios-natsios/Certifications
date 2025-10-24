@@ -17,8 +17,8 @@ class Client extends Model
         return $this->belongsTo(Organization::class);
     }
 
-    public function certificateCategory()
+    public function certificateCategories()
     {
-        return $this->belongsTo(CertificateCategory::class);
+        return $this->belongsToMany(CertificateCategory::class, 'certificate_category_client');
     }
 }

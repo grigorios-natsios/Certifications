@@ -10,14 +10,14 @@ class CertificateCategory extends Model
 
     protected $fillable = ['name', 'slug', 'html_template'];
 
+    public function clients()
+    {
+        return $this->belongsToMany(Client::class, 'certificate_category_client');
+    }
+
     public function certificates()
     {
         return $this->hasMany(Certificate::class, 'category_id');
-    }
-
-    public function clients()
-    {
-        return $this->hasMany(Client::class);
     }
 
 }

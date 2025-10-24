@@ -104,14 +104,13 @@
                     <x-text-input id="email" name="email" type="email" class="w-full mb-3"/>
                     <p id="error_email" class="mt-1 text-red-500 text-sm"></p>
 
-                    <x-input-label for="certificate_category_id" :value="__('Κατηγορία Πιστοποιητικού')" class="mb-1"/>
-                    <select id="certificate_category_id" name="certificate_category_id" class="border p-2 w-full rounded mb-3">
-                        <option value="">{{ __('Καμία') }}</option>
+                    <x-input-label for="certificate_category_ids" :value="__('Κατηγορίες Πιστοποιητικού')" class="mb-1"/>
+                    <select id="certificate_category_ids" name="certificate_category_ids[]" multiple class="border p-2 w-full rounded mb-3">
                         @foreach($categories as $cat)
                             <option value="{{ $cat->id }}">{{ $cat->name }}</option>
                         @endforeach
                     </select>
-                    <p id="error_certificate_category_id" class="mt-1 text-red-500 text-sm"></p>
+                    <p id="error_certificate_category_ids" class="mt-1 text-red-500 text-sm"></p>
 
                     <div class="flex justify-end mt-4">
                         <button type="button" id="closeModal" class="mr-2 px-4 py-2 rounded border border-gray-400">
@@ -180,7 +179,7 @@
                     $('#client_id').val(data.id);
                     $('#name').val(data.name);
                     $('#email').val(data.email);
-                    $('#certificate_category_id').val(data.certificate_category_id);
+                    $('#certificate_category_ids').val(data.certificate_categories).trigger('change');
                     $('#modalTitle').text('Επεξεργασία Πελάτη');
                     $('#clientModal').removeClass('hidden');
                 });

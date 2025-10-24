@@ -63,7 +63,7 @@ class ClientController extends Controller
 
     public function datatable(Request $request)
     {
-        $query = Client::with('certificateCategory')
+        $query = Client::with('certificateCategories')
             ->where('organization_id', Auth::user()->organization_id);
 
         if ($request->id) {
@@ -79,7 +79,9 @@ class ClientController extends Controller
         }
 
         if ($request->certificate_category_id) {
-            $query->where('certificate_category_id', $request->certificate_category_id);
+            $query->whereHas('certificateCategories', function ($q) use ($request) {
+                $q->where('certificate_categories.id', $request->certificate_category_id);
+            });
         }
 
         if ($request->created_at) {
@@ -87,7 +89,12 @@ class ClientController extends Controller
         }
 
         return DataTables::of($query)
-            ->addColumn('category', fn($client) => $client->certificateCategory?->name)
+            ->addColumn('category', function($client) {
+                return $client->certificateCategories->pluck('name')->join(', ');
+            })
+            ->addColumn('certificate_categories', function($client) {
+                return $client->certificateCategories->pluck('id')->toArray();
+            })
             ->addColumn('actions', function ($client) {
                 $edit = '<button class="editClient bg-blue-500 text-white px-2 py-1 rounded" data-id="'.$client->id.'"> <i class="fas fa-edit"></i></button>';
                 $delete = '<button class="deleteClient  bg-red-600 text-white px-2 py-1 rounded" data-id="'.$client->id.'"> <i class="fas fa-trash-alt"></i></button>';
@@ -109,13 +116,18 @@ class ClientController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
-            'certificate_category_id' => 'nullable|exists:certificate_categories,id',
+            'certificate_category_ids' => 'array',
+            'certificate_category_ids.*' => 'exists:certificate_categories,id',
         ]);
 
         // Ο οργανισμός πάντα από τον logged-in user
         $validated['organization_id'] = Auth::user()->organization_id;
 
-        Client::create($validated);
+        $client = Client::create($validated);
+
+        if (!empty($validated['certificate_category_ids'])) {
+            $client->certificateCategories()->sync($validated['certificate_category_ids']);
+        }
 
         return response()->json(['message' => 'Client created successfully']);
     }
@@ -133,12 +145,19 @@ class ClientController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
-            'certificate_category_id' => 'nullable|exists:certificate_categories,id',
+            'certificate_category_ids' => 'array',
+            'certificate_category_ids.*' => 'exists:certificate_categories,id',
         ]);
 
         $validated['organization_id'] = Auth::user()->organization_id;
 
         $client->update($validated);
+
+        if (!empty($validated['certificate_category_ids'])) {
+            $client->certificateCategories()->sync($validated['certificate_category_ids']);
+        } else {
+            $client->certificateCategories()->detach();
+        }
 
         return response()->json(['message' => 'Client updated successfully']);
     }
