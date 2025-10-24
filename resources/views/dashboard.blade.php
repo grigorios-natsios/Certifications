@@ -56,16 +56,18 @@
                             <th class="px-4 py-2">
                                 <input type="checkbox" id="selectAll">
                             </th>
-                            <th class="px-4 py-2">{{ __('ID') }}</th>
+                            <th class="px-2 py-2 w-12">{{ __('ID') }}</th>
                             <th class="px-4 py-2">{{ __('Όνομα') }}</th>
                             <th class="px-4 py-2">{{ __('Email') }}</th>
                             <th class="px-4 py-2">{{ __('Κατηγορία') }}</th>
                             <th class="px-4 py-2">{{ __('Ημερομηνία Δημιουργίας') }}</th>
-                            <th class="px-4 py-2">{{ __('Ενέργειες') }}</th>
+                            <th class="px-4 py-2 w-36">{{ __('Ενέργειες') }}</th>
                         </tr>
                         <tr>
                             <th></th>
-                            <th><input type="text" id="filterId" class="form-control form-control-sm" placeholder="ID"></th>
+                            <th>
+                                <input type="text" id="filterId" class="form-control form-control-sm w-12" placeholder="ID">
+                            </th>
                             <th><input type="text" id="filterName" class="form-control form-control-sm" placeholder="Όνομα"></th>
                             <th><input type="text" id="filterEmail" class="form-control form-control-sm" placeholder="Email"></th>
                             <th>
@@ -145,7 +147,7 @@
                             orderable: false,
                             searchable: false
                         },
-                        { data: 'id' },
+                        { data: 'id',  width: '50px' },
                         { data: 'name' },
                         { data: 'email' },
                         { data: 'category' },
@@ -266,11 +268,9 @@
                     input.addEventListener('change', filterTable);
                 });
 
-                $('#filterId, #filterName, #filterEmail, #filterCategory, #filterDate').on('input change', function() {
+                $('#filterId, #filterName, #filterEmail, #filterCategory, #filterDate').on('blur change', function() {
                     table.draw(); // ξανατρέχει το Ajax και φιλτράρει
                 });
-
-
             });
         </script>
     @endpush
