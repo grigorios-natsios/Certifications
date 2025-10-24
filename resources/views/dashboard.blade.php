@@ -50,39 +50,41 @@
                 </div>
 
                 <!-- DataTable -->
-                <table id="clientsTable" class="min-w-full text-left text-sm border rounded">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th class="px-4 py-2">
-                                <input type="checkbox" id="selectAll">
-                            </th>
-                            <th class="px-2 py-2 w-12">{{ __('ID') }}</th>
-                            <th class="px-4 py-2">{{ __('Όνομα') }}</th>
-                            <th class="px-4 py-2">{{ __('Email') }}</th>
-                            <th class="px-4 py-2">{{ __('Κατηγορία') }}</th>
-                            <th class="px-4 py-2">{{ __('Ημερομηνία Δημιουργίας') }}</th>
-                            <th class="px-4 py-2 w-36">{{ __('Ενέργειες') }}</th>
-                        </tr>
-                        <tr>
-                            <th></th>
-                            <th>
-                                <input type="text" id="filterId" class="form-control form-control-sm w-12" placeholder="ID">
-                            </th>
-                            <th><input type="text" id="filterName" class="form-control form-control-sm" placeholder="Όνομα"></th>
-                            <th><input type="text" id="filterEmail" class="form-control form-control-sm" placeholder="Email"></th>
-                            <th>
-                                <select id="filterCategory" class="form-control form-control-sm">
-                                    <option value="">Όλες</option>
-                                    @foreach($categories as $cat)
-                                        <option value="{{ $cat->id }}">{{ $cat->name }}</option>
-                                    @endforeach
-                                </select>
-                            </th>
-                            <th><input type="date" id="filterDate" class="form-control form-control-sm"></th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                </table>
+                <div class="overflow-x-auto">
+                    <table id="clientsTable" class="min-w-full table-auto border">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-4 py-2">
+                                    <input type="checkbox" id="selectAll">
+                                </th>
+                                <th class="px-2 py-2 w-12">{{ __('ID') }}</th>
+                                <th class="px-4 py-2">{{ __('Όνομα') }}</th>
+                                <th class="px-4 py-2">{{ __('Email') }}</th>
+                                <th class="px-4 py-2">{{ __('Κατηγορία') }}</th>
+                                <th class="px-4 py-2">{{ __('Ημερομηνία Δημιουργίας') }}</th>
+                                <th class="px-4 py-2 w-36">{{ __('Ενέργειες') }}</th>
+                            </tr>
+                            <tr>
+                                <th></th>
+                                <th>
+                                    <input type="text" id="filterId" class="form-control form-control-sm w-12" placeholder="ID">
+                                </th>
+                                <th><input type="text" id="filterName" class="form-control form-control-sm" placeholder="Όνομα"></th>
+                                <th><input type="text" id="filterEmail" class="form-control form-control-sm" placeholder="Email"></th>
+                                <th>
+                                    <select id="filterCategory" class="form-control form-control-sm">
+                                        <option value="">Όλες</option>
+                                        @foreach($categories as $cat)
+                                            <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </th>
+                                <th><input type="date" id="filterDate" class="form-control form-control-sm"></th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -154,7 +156,8 @@
                         { data: 'created_at', render: function(d){ return d ? new Date(d).toLocaleDateString('el-GR') : ''; }},
                         { data: 'actions', orderable: false, searchable: false }
                     ],
-                    language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/el.json' }
+                    language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/el.json' },
+                    responsive: true, 
                 });
 
                 // Φίλτρο

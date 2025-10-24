@@ -89,14 +89,13 @@ class ClientController extends Controller
         return DataTables::of($query)
             ->addColumn('category', fn($client) => $client->certificateCategory?->name)
             ->addColumn('actions', function ($client) {
-                $edit = '<button class="editClient px-2 py-1 bg-yellow-500 text-white rounded" data-id="'.$client->id.'">Edit</button>';
-                $delete = '<button class="deleteClient px-2 py-1 bg-red-500 text-white rounded" data-id="'.$client->id.'">Delete</button>';
+                $edit = '<button class="editClient bg-blue-500 text-white px-2 py-1 rounded" data-id="'.$client->id.'"> <i class="fas fa-edit"></i></button>';
+                $delete = '<button class="deleteClient  bg-red-600 text-white px-2 py-1 rounded" data-id="'.$client->id.'"> <i class="fas fa-trash-alt"></i></button>';
                 return $edit.' '.$delete;
             })
             ->rawColumns(['actions'])
             ->make(true);
     }
-
 
     public function create()
     {

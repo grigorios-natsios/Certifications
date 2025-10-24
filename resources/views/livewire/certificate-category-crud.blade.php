@@ -15,7 +15,8 @@
     </div>
 
     {{-- Table of categories --}}
-        <table class="w-full border rounded text-sm">
+    <div class="overflow-x-auto">
+        <table class="min-w-full table-auto border>
             <thead class="bg-gray-100">
                 <tr>
                     <th class="p-2 text-left">ID</th>
@@ -32,24 +33,14 @@
                         {{-- Actions --}}
                         <td class="p-2 text-center space-x-2 flex justify-center">
                             <!-- Edit Icon -->
-                            <button wire:click="edit({{ $category->id }})"
-                                    class="text-yellow-500 hover:text-yellow-600">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24"
-                                    stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M11 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-5m-5-5l5 5m0 0l-5 5m5-5H6"/>
-                                </svg>
+                            <button wire:click="edit({{ $category->id }})" class="bg-blue-500 text-white px-2 py-1 rounded">
+                                    <i class="fas fa-edit"></i>
                             </button>
 
                             <!-- Delete Icon -->
-                            <button wire:click="delete({{ $category->id }})"
-                                    onclick="confirm('Σίγουρα θέλεις να διαγράψεις αυτήν την κατηγορία;') || event.stopImmediatePropagation()"
-                                    class="text-red-500 hover:text-red-600">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24"
-                                    stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
+                            <button wire:click="delete({{ $category->id }})" onclick="confirm('Σίγουρα θέλεις να διαγράψεις αυτήν την κατηγορία;') || event.stopImmediatePropagation()"
+                                    class="bg-red-600 text-white px-2 py-1 rounded">
+                                    <i class="fas fa-trash-alt"></i>
                             </button>
                         </td>
                     </tr>
@@ -62,7 +53,7 @@
                 @endforelse
             </tbody>
         </table>
-
+    </div>
 
     {{-- Modal --}}
     @if($showModal)

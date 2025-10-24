@@ -14,18 +14,19 @@
                 {{ __('+ Προσθήκη') }}
             </button>
         </div>
-
-        <table id="usersTable" class="min-w-full text-left text-sm border rounded">
-            <thead class="bg-gray-100">
-                <tr>
-                    <th class="px-4 py-2">{{ __('ID') }}</th>
-                    <th class="px-4 py-2">{{ __('Όνομα') }}</th>
-                    <th class="px-4 py-2">{{ __('Email') }}</th>
-                    <th class="px-4 py-2">{{ __('Ημερομηνία') }}</th>
-                    <th class="px-4 py-2">{{ __('Ενέργειες') }}</th>
-                </tr>
-            </thead>
-        </table>
+        <div class="overflow-x-auto">
+            <table id="usersTable" class="min-w-full table-auto border">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="px-4 py-2">{{ __('ID') }}</th>
+                        <th class="px-4 py-2">{{ __('Όνομα') }}</th>
+                        <th class="px-4 py-2">{{ __('Email') }}</th>
+                        <th class="px-4 py-2">{{ __('Ημερομηνία') }}</th>
+                        <th class="px-4 py-2">{{ __('Ενέργειες') }}</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
     </div>
 
     {{-- Modal --}}
@@ -111,8 +112,9 @@
                             return '';
                         }
                     },
-                    { data: 'actions', orderable: false, searchable: false }
+                    { data: 'actions', orderable: false, searchable: false, className: 'text-center'  }
                 ],
+                responsive: true, 
                 language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/el.json' }
             });
 
