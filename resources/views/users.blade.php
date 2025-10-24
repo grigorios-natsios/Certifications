@@ -13,16 +13,6 @@
             <button id="addUserBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
                 {{ __('+ Προσθήκη') }}
             </button>
-            {{-- <input type="text" id="searchEmail" placeholder="{{ __('Αναζήτηση με Email') }}"
-                   class="border p-2 rounded w-1/3" />
-            <select id="roleFilter" class="border p-2 rounded w-1/4">
-                <option value="">{{ __('Όλοι οι ρόλοι') }}</option>
-                <option value="admin">{{ __('Admin') }}</option>
-                <option value="user">{{ __('User') }}</option>
-            </select>
-            <button id="filterBtn" class="bg-gray-700 text-white px-4 py-2 rounded">
-                {{ __('Φιλτράρισμα') }}
-            </button> --}}
         </div>
 
         <table id="usersTable" class="min-w-full text-left text-sm border rounded">

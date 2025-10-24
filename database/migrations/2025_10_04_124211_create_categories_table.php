@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('certificate_categories', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('svg_path')->nullable();
+            $table->longText('html_template')->nullable();
             $table->string('slug')->nullable();
             $table->timestamps();
         });

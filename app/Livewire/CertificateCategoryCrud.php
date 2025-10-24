@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Storage;
 class CertificateCategoryCrud extends Component
 {
     use WithFileUploads;
-    public $categories, $name, $svg, $category_id;
+    public $categories, $name, $html_template, $category_id;
     public $showModal = false;
 
     public function render()
@@ -22,7 +22,7 @@ class CertificateCategoryCrud extends Component
     private function resetInputFields()
     {
         $this->name = '';
-        $this->svg = null;
+        $this->html_template = null;
         $this->category_id = null;
     }
 
@@ -41,17 +41,12 @@ class CertificateCategoryCrud extends Component
     {
         $this->validate([
             'name' => 'required|string|max:255',
-            'svg'  => 'nullable|file|mimes:svg,xml|max:2048',
+            'html_template' => 'required|string',
         ]);
-
-        $path = null;
-        if ($this->svg) {
-            $path = $this->svg->store('certificates', 'public');
-        }
         
         CertificateCategory::create([
             'name' => $this->name,
-            'svg_path' => $path,
+            'html_template' => $this->html_template,
         ]);
 
         session()->flash('message', 'Category Created Successfully.');
@@ -63,6 +58,7 @@ class CertificateCategoryCrud extends Component
         $category = CertificateCategory::findOrFail($id);
         $this->category_id = $id;
         $this->name = $category->name;
+        $this->html_template = $category->html_template;
         $this->showModal = true;
     }
 
@@ -70,19 +66,14 @@ class CertificateCategoryCrud extends Component
     {
         $this->validate([
             'name' => 'required|string|max:255',
-            'svg'  => 'nullable|file|mimes:svg,xml|max:2048',
+            'html_template' => 'required|string',
         ]);
 
         $category = CertificateCategory::find($this->category_id);
         if ($category) {
-            $path = $category->svg_path;
-            if ($this->svg) {
-                $path = $this->svg->store('certificates', 'public');
-            }
-
             $category->update([
                 'name' => $this->name,
-                'svg_path' => $path,
+                'html_template' => $this->html_template,
             ]);
 
             session()->flash('message', 'Category Updated Successfully.');
@@ -95,16 +86,10 @@ class CertificateCategoryCrud extends Component
         $category = CertificateCategory::find($id);
         
         if (!$category) return;
-
-        // Διαγραφή SVG αν υπάρχει
-        if ($category->svg_path && \Storage::disk('public')->exists($category->svg_path)) {
-            \Storage::disk('public')->delete($category->svg_path);
-        }
-
         // Διαγραφή κατηγορίας
         $category->delete();
 
-        session()->flash('message', 'Category and SVG deleted successfully.');
+        session()->flash('message', 'Category deleted successfully.');
     }
 
 }

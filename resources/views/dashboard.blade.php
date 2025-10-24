@@ -16,7 +16,7 @@
         <!-- CSV Import Form -->
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-6">
-                <h4 class="text-lg font-semibold mb-4">Εισαγωγή Πελατών</h4>
+                <h4 class="text-lg font-semibold mb-4">{{ __('Εισαγωγή Πελατών') }}</h4>
 
                 @if(session()->has('message'))
                     <div class="bg-green-100 text-green-800 p-3 rounded mb-4">
@@ -27,11 +27,11 @@
                 <form action="{{ route('clients.import') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
                     @csrf
                     <div>
-                        <label class="block text-gray-700 dark:text-gray-200 mb-1">Upload CSV</label>
+                        <label class="block text-gray-700 dark:text-gray-200 mb-1">{{ __('Upload CSV') }}</label>
                         <input type="file" name="file" accept=".csv" required class="border rounded p-2 w-full">
                     </div>
                     <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
-                        Import Clients
+                       {{ __('Import Clients') }}
                     </button>
                 </form>
             </div>
@@ -42,34 +42,10 @@
             <div class="container mx-auto p-6">
                 <div class="flex space-x-4 mb-4">
                     <button id="addClientBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                        + Προσθήκη Πελάτη
+                        + {{ __('Προσθήκη Πελάτη') }}
                     </button>
-
-                    <select id="categoryFilter" class="border p-2 rounded w-1/4">
-                        <option value="">{{ __('Όλες οι κατηγορίες') }}</option>
-                        @foreach($categories as $cat)
-                            <option value="{{ $cat->id }}">{{ $cat->name }}</option>
-                        @endforeach
-                    </select>
-
-                    <input type="text" id="searchName" placeholder="{{ __('Αναζήτηση με Όνομα') }}"
-                        class="border p-2 rounded w-1/4" />
-
-                    <button id="filterBtn" class="bg-gray-700 text-white px-4 py-2 rounded">
-                        {{ __('Φιλτράρισμα') }}
-                    </button>
-                </div>
-                <div class="flex space-x-4 mb-4">
-                    <button id="addClientBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                        + Προσθήκη Πελάτη
-                    </button>
-
-                    <button id="deleteSelectedBtn" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
-                        Διαγραφή Επιλεγμένων
-                    </button>
-
-                    <button id="assignCategoryBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                        Ανάθεση Κατηγορίας
+                     <button id="generatePDFsBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                        {{ __('Δημιουργία Πιστοποιητικών') }}
                     </button>
                 </div>
 
@@ -86,6 +62,22 @@
                             <th class="px-4 py-2">{{ __('Κατηγορία') }}</th>
                             <th class="px-4 py-2">{{ __('Ημερομηνία Δημιουργίας') }}</th>
                             <th class="px-4 py-2">{{ __('Ενέργειες') }}</th>
+                        </tr>
+                        <tr>
+                            <th></th>
+                            <th><input type="text" id="filterId" class="form-control form-control-sm" placeholder="ID"></th>
+                            <th><input type="text" id="filterName" class="form-control form-control-sm" placeholder="Όνομα"></th>
+                            <th><input type="text" id="filterEmail" class="form-control form-control-sm" placeholder="Email"></th>
+                            <th>
+                                <select id="filterCategory" class="form-control form-control-sm">
+                                    <option value="">Όλες</option>
+                                    @foreach($categories as $cat)
+                                        <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                                    @endforeach
+                                </select>
+                            </th>
+                            <th><input type="date" id="filterDate" class="form-control form-control-sm"></th>
+                            <th></th>
                         </tr>
                     </thead>
                 </table>
@@ -137,8 +129,11 @@
                     ajax: {
                         url: '{{ route("clients.data") }}',
                         data: function(d) {
-                            d.certificate_category_id = $('#categoryFilter').val();
-                            d.searchName = $('#searchName').val();
+                            d.id = $('#filterId').val();
+                            d.name = $('#filterName').val();
+                            d.email = $('#filterEmail').val();
+                            d.certificate_category_id = $('#filterCategory').val();
+                            d.created_at = $('#filterDate').val();
                         }
                     },
                     columns: [
@@ -198,19 +193,9 @@
                     }
                 });
 
-               $('#deleteSelectedBtn').click(function() {
-                    let ids = getSelectedIds();
-                    if(ids.length === 0) { alert('Επέλεξε τουλάχιστον έναν πελάτη'); return; }
-
-                    console.log('Selected IDs:', ids);
-                    // εδώ κάνεις μαζική διαγραφή ή άλλη ενέργεια μέσω AJAX
-                });
-
                 $('#selectAll').on('change', function() {
                     $('.selectClient').prop('checked', $(this).prop('checked'));
                 });
-
-
 
                 // Αποθήκευση (Create/Update)
                 $('#clientForm').submit(function(e){
@@ -234,6 +219,40 @@
                     });
                 });
 
+                $('#generatePDFsBtn').click(function() {
+                    let ids = [];
+                    $('.selectClient:checked').each(function() {
+                        ids.push($(this).val());
+                    });
+
+                    if (ids.length === 0) {
+                        alert('Επέλεξε τουλάχιστον έναν πελάτη.');
+                        return;
+                    }
+
+                    console.log(ids);
+
+                    if (!confirm('Να δημιουργηθούν πιστοποιητικά PDF για τους επιλεγμένους πελάτες;')) {
+                        return;
+                    }
+
+                    $.ajax({
+                        url: '{{ route("clients.generate-pdfs") }}', // θα το φτιάξουμε παρακάτω
+                        type: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}',
+                            clients: ids
+                        },
+                        success: function(response) {
+                            alert(response.message);
+                        },
+                        error: function(xhr) {
+                            console.error(xhr);
+                            alert('Κάτι πήγε στραβά.');
+                        }
+                    });
+                });
+
                 function getSelectedIds() {
                     let ids = [];
                     $('.selectClient:checked').each(function() {
@@ -241,6 +260,17 @@
                     });
                     return ids;
                 }
+
+                document.querySelectorAll('.filter-input, .filter-select').forEach(input => {
+                    input.addEventListener('input', filterTable);
+                    input.addEventListener('change', filterTable);
+                });
+
+                $('#filterId, #filterName, #filterEmail, #filterCategory, #filterDate').on('input change', function() {
+                    table.draw(); // ξανατρέχει το Ajax και φιλτράρει
+                });
+
+
             });
         </script>
     @endpush

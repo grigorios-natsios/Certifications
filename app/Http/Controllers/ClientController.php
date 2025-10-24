@@ -8,6 +8,7 @@ use App\Models\CertificateCategory;
 use App\Models\Organization;
 use Illuminate\Support\Facades\Auth;
 use Yajra\DataTables\DataTables;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ClientController extends Controller
 {
@@ -65,12 +66,24 @@ class ClientController extends Controller
         $query = Client::with('certificateCategory')
             ->where('organization_id', Auth::user()->organization_id);
 
+        if ($request->id) {
+            $query->where('id', $request->id);
+        }
+
+        if ($request->name) {
+            $query->where('name', 'like', "%{$request->name}%");
+        }
+
+        if ($request->email) {
+            $query->where('email', 'like', "%{$request->email}%");
+        }
+
         if ($request->certificate_category_id) {
             $query->where('certificate_category_id', $request->certificate_category_id);
         }
 
-        if ($request->searchName) {
-            $query->where('name', 'like', "%{$request->searchName}%");
+        if ($request->created_at) {
+            $query->whereDate('created_at', $request->created_at);
         }
 
         return DataTables::of($query)
@@ -137,5 +150,47 @@ class ClientController extends Controller
         return redirect()->route('clients.index')->with('success', 'Client deleted successfully');
     }
 
+    public function generateForClients(Request $request)
+    {
+        $clientIds = $request->input('clients', []);
+
+        if (empty($clientIds)) {
+            return response()->json(['message' => 'Δεν επιλέχθηκαν πελάτες.'], 400);
+        }
+
+        $clients = Client::with('certificateCategory')->whereIn('id', $clientIds)->get();
+
+        foreach ($clients as $client) {
+            $category = $client->certificateCategory;
+            if (!$category || !$category->html_template) {
+                continue; // skip clients χωρίς template
+            }
+            
+            // Παίρνουμε το SVG template
+            $html = $category->html_template;
+
+            $replacements = [
+                '{{name}}' => $client->name,
+                '{{category}}' => $category->name,
+                '{{date}}' => date('d/m/Y'),
+            ];
+
+            $htmlModified = str_replace(array_keys($replacements), array_values($replacements), $html);
+
+            $pdf = Pdf::loadHTML($htmlModified)
+          ->setPaper([0, 0, 841.89, 595.28], 'landscape'); // A4 landscape σε points
+
+
+            $pdfPath = storage_path('app/public/pdfs/'.$client->id.'.pdf');
+
+            if (!file_exists(dirname($pdfPath))) {
+                mkdir(dirname($pdfPath), 0777, true);
+            }
+
+            $pdf->save($pdfPath);
+        }
+
+        return response()->json(['message' => 'Τα PDF certificates δημιουργήθηκαν επιτυχώς.']);
+    }
     
 }

@@ -36,12 +36,6 @@ new class extends Component
                 </div>
 
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('users.index')">
-                        {{ __('Χρήστες') }}
-                    </x-nav-link>
-                </div>
-
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                     <x-nav-link :href="route('certificate-categories.index')">
                         {{ __('Κατηγορίες') }}
                     </x-nav-link>
@@ -70,7 +64,6 @@ new class extends Component
                         <x-dropdown-link :href="route('users.index')" wire:navigate>
                             {{ __('Χρήστες') }}
                         </x-dropdown-link>
-
                         <!-- Authentication -->
                         <button wire:click="logout" class="w-full text-start">
                             <x-dropdown-link>

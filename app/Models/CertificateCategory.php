@@ -8,7 +8,7 @@ class CertificateCategory extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'slug', 'svg_path'];
+    protected $fillable = ['name', 'slug', 'html_template'];
 
     public function certificates()
     {

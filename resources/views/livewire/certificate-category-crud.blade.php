@@ -15,54 +15,59 @@
     </div>
 
     {{-- Table of categories --}}
-    <table class="w-full border rounded text-sm">
-        <thead class="bg-gray-100">
-            <tr>
-                <th class="p-2 text-left">ID</th>
-                <th class="p-2 text-left">Όνομα</th>
-                <th class="p-2 text-center">Προεπισκόπηση SVG</th>
-                <th class="p-2 text-center">Ενέργειες</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($categories as $category)
-                <tr class="border-b hover:bg-gray-50">
-                    <td class="p-2">{{ $category->id }}</td>
-                    <td class="p-2">{{ $category->name }}</td>
-
-                    {{-- SVG Preview --}}
-                    <td class="p-2 text-center">
-                        @if($category->svg_path)
-                            <a href="{{ Storage::url($category->svg_path) }}" target="_blank" class="text-blue-600 underline">
-                                Προβολή
-                            </a>
-                        @else
-                            <span class="text-gray-400 italic">—</span>
-                        @endif
-                    </td>
-
-                    {{-- Actions --}}
-                    <td class="p-2 text-center space-x-2">
-                        <button wire:click="edit({{ $category->id }})"
-                                class="bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600">
-                            Επεξεργασία
-                        </button>
-
-                        <button wire:click="delete({{ $category->id }})"
-                                onclick="confirm('Σίγουρα θέλεις να διαγράψεις αυτήν την κατηγορία;') || event.stopImmediatePropagation()"
-                                class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">
-                            Διαγραφή
-                        </button>
-                    </td>
+        <table class="w-full border rounded text-sm">
+            <thead class="bg-gray-100">
+                <tr>
+                    <th class="p-2 text-left">ID</th>
+                    <th class="p-2 text-left">Όνομα</th>
+                    <th class="p-2 text-center">Ενέργειες</th>
                 </tr>
-            @endforeach
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @forelse($categories as $category)
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-2">{{ $category->id }}</td>
+                        <td class="p-2">{{ $category->name }}</td>
+
+                        {{-- Actions --}}
+                        <td class="p-2 text-center space-x-2 flex justify-center">
+                            <!-- Edit Icon -->
+                            <button wire:click="edit({{ $category->id }})"
+                                    class="text-yellow-500 hover:text-yellow-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M11 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-5m-5-5l5 5m0 0l-5 5m5-5H6"/>
+                                </svg>
+                            </button>
+
+                            <!-- Delete Icon -->
+                            <button wire:click="delete({{ $category->id }})"
+                                    onclick="confirm('Σίγουρα θέλεις να διαγράψεις αυτήν την κατηγορία;') || event.stopImmediatePropagation()"
+                                    class="text-red-500 hover:text-red-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="3" class="text-center p-4 text-gray-500 italic">
+                            Δεν υπάρχουν δεδομένα
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+
 
     {{-- Modal --}}
     @if($showModal)
         <div wire:key="certificate-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-            <div class="bg-white rounded-lg shadow-lg w-96 p-6">
+            <div class="bg-white rounded-lg shadow-lg w-500 p-6">
                 <h3 class="text-lg font-semibold mb-4">
                     {{ $category_id ? 'Επεξεργασία Κατηγορίας' : 'Προσθήκη Κατηγορίας' }}
                 </h3>
@@ -73,18 +78,29 @@
                 @error('name') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
 
                 {{-- SVG Upload --}}
-                <input type="file" wire:model="svg" accept=".svg"
-                       class="border p-2 w-full mb-4">
-                @error('svg') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-
-                {{-- Preview if editing --}}
-                @if($category_id && $categories->find($category_id)?->svg_path)
-                    <div class="mb-3 text-sm">
-                        <p class="text-gray-600 mb-1">Τρέχον SVG:</p>
-                        <a href="{{ Storage::url($categories->find($category_id)->svg_path) }}" target="_blank"
-                           class="text-blue-600 underline">Προβολή Αρχείου</a>
+                <label for="html_template" class="block mb-1 font-medium">HTML Template</label>
+                <textarea id="html_template" wire:model="html_template" rows="10"
+                        class="border p-2 w-full mb-4"></textarea>
+                @error('html_template') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                <h4 class="font-semibold mb-2">Προεπισκόπηση:</h4>
+                <div class="border p-2 w-full bg-gray-50 flex justify-center items-center" 
+                    style="height:250px; overflow:auto;">
+                    <div x-data
+                        x-ref="preview"
+                        x-init="
+                            const preview = $refs.preview;
+                            const child = preview.firstElementChild;
+                            const scaleX = preview.clientWidth / child.scrollWidth;
+                            const scaleY = preview.clientHeight / child.scrollHeight;
+                            const scale = Math.min(scaleX, scaleY, 1);
+                            child.style.transform = 'scale(' + scale + ')';
+                            child.style.transformOrigin = 'top left';
+                        "
+                        style="display:inline-block;"
+                    >
+                        {!! $html_template !!}
                     </div>
-                @endif
+                </div>
 
                 {{-- Buttons --}}
                 <div class="flex justify-end space-x-2">
