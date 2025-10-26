@@ -49,7 +49,10 @@ class UserController extends Controller
 
         $this->service->createUser($validated);
 
-        return response()->json(['success' => true, 'message' => 'Ο χρήστης προστέθηκε επιτυχώς!']);
+        return response()->json([
+            'success' => true,
+            'message' => __('Ο χρήστης προστέθηκε επιτυχώς!')
+        ]);
     }
 
     public function update(Request $request, $id)
@@ -62,12 +65,18 @@ class UserController extends Controller
 
         $this->service->updateUser($id, $validated);
 
-        return response()->json(['success' => true, 'message' => 'Ο χρήστης ενημερώθηκε επιτυχώς!']);
+        return response()->json([
+            'success' => true,
+            'message' => __('Ο χρήστης ενημερώθηκε επιτυχώς!')
+        ]);
     }
 
     public function destroy($id)
     {
         $this->service->deleteUser($id);
-        return response()->json(['success' => true, 'message' => 'Ο χρήστης διαγράφηκε επιτυχώς!']);
+        return response()->json([
+            'success' => true,
+            'message' => __('Ο χρήστης διαγράφηκε επιτυχώς!')
+        ]);
     }
 }

@@ -19,6 +19,7 @@ class Client extends Model
 
     public function certificateCategories()
     {
-        return $this->belongsToMany(CertificateCategory::class, 'certificate_category_client');
+        return $this->belongsToMany(CertificateCategory::class, 'certificate_category_client')
+        ->withTimestamps();
     }
 }

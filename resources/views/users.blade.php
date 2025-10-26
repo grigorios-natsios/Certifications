@@ -66,21 +66,6 @@
         </div>
     </div>
 
-    <!-- Success Modal -->
-    <div
-        x-data="{ show: false, message: '' }"
-        x-show="show"
-        x-transition
-        x-cloak
-        id="successModal"
-        class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
-    >
-        <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full text-center">
-            <h2 class="text-lg font-bold mb-2">{{ __('Επιτυχία!') }}</h2>
-            <p x-text="message"></p>
-        </div>
-    </div>
-
     @push('scripts')
     <script>
         $(document).ready(function() {
@@ -115,13 +100,13 @@
                     { data: 'actions', orderable: false, searchable: false, className: 'text-center'  }
                 ],
                 responsive: true, 
-                language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/el.json' }
+                language: { url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/el.json' }
             });
 
             // Φίλτρα
-            $('#filterBtn').on('click', function() {
-                table.ajax.reload();
-            });
+            //$('#filterBtn').on('click', function() {
+            //    table.ajax.reload();
+            //});
 
             // Άνοιγμα modal
             $('#addUserBtn').on('click', function() {
@@ -148,29 +133,28 @@
             });
 
             // Διαγραφή
-            $('#usersTable').on('click', '.deleteUser', function() {
-                if (confirm('Σίγουρα θέλεις να διαγράψεις αυτόν τον χρήστη;')) {
-                    let id = $(this).data('id');
-                    $.ajax({
-                        url: '/users/' + id,
-                        type: 'DELETE',
-                        data: { _token: '{{ csrf_token() }}' },
-                        success: function(res) {
-                            table.ajax.reload();
-                        }
-                    });
-                }
-            });
-            document.addEventListener('alpine:init', () => {
-                    Alpine.data('autoCloseModal', () => ({
-                        show: false,
-                        init() {
-                            if (this.show) {
-                                setTimeout(() => this.show = false, 3000);
+            $('#usersTable').on('click', '.deleteUser', function() {       
+                let id = $(this).data('id');
+                confirmDelete({
+                    message: "{{ __('Σίγουρα θέλεις να διαγράψεις αυτόν τον χρήστη;') }}",
+                    confirmText: "{{ __('Διαγραφή') }}",
+                    cancelText: "{{ __('Άκυρο') }}",
+                    onConfirm: () => {
+                        $.ajax({
+                            url: '/users/' + id,
+                            type: 'DELETE',
+                            data: { _token: $('meta[name="csrf-token"]').attr('content') },
+                            success: function(res) {
+                                showToast(res.message, 'success');
+                                $('#usersTable').DataTable().ajax.reload();
+                            },
+                            error: function(err) {
+                                showToast("{{ __('Κάτι πήγε στραβά!') }}", 'error');
                             }
-                        }
-                    }));
+                        });
+                    }
                 });
+            });
                        
             $('#userForm').on('submit', function(e) {
                 e.preventDefault();
@@ -190,10 +174,7 @@
                         table.ajax.reload();
 
                         // Success modal
-                        const modal = document.getElementById('successModal');
-                        modal.querySelector('p').textContent = res.message;
-                        modal.classList.remove('hidden');
-                        setTimeout(() => modal.classList.add('hidden'), 3000);
+                        showToast(res.message, type = 'success');                  
                     },
                     error: function(xhr) {
                         if (xhr.status === 422) {

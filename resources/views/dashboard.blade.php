@@ -155,7 +155,7 @@
                         { data: 'created_at', render: function(d){ return d ? new Date(d).toLocaleDateString('el-GR') : ''; }},
                         { data: 'actions', orderable: false, searchable: false }
                     ],
-                    language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/el.json' },
+                    language: { url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/el.json' },
                     responsive: true, 
                 });
 
@@ -186,15 +186,29 @@
 
                 // Διαγραφή
                 $('#clientsTable').on('click', '.deleteClient', function() {
-                    if(confirm('Σίγουρα θέλεις να διαγράψεις αυτόν τον πελάτη;')) {
-                        let id = $(this).data('id');
-                        $.ajax({
-                            url: '/clients/' + id,
-                            type: 'DELETE',
-                            data: {_token:'{{ csrf_token() }}'},
-                            success: () => table.ajax.reload()
-                        });
-                    }
+                   
+                    let id = $(this).data('id');
+                    confirmDelete({
+                        message: "{{ __('Σίγουρα θέλεις να διαγράψεις αυτόν τον πελάτη;') }}",
+                        confirmText: "{{ __('Διαγραφή') }}",
+                        cancelText: "{{ __('Άκυρο') }}",
+                        onConfirm: () => {
+                            $.ajax({
+                                url: '/clients/' + id,
+                                type: 'DELETE',
+                                data: {_token:'{{ csrf_token() }}'},
+                                success: function(res) {
+                                    showToast(res.message, 'success');
+                                    $('#clientsTable').DataTable().ajax.reload();
+                                },
+                                error: function(err) {
+                                    showToast("{{ __('Κάτι πήγε στραβά!') }}", 'error');
+                                }
+                            });
+                        }
+                    });
+                   
+                    
                 });
 
                 $('#selectAll').on('change', function() {
@@ -209,10 +223,11 @@
                     let type = id ? 'PUT' : 'POST';
                     $.ajax({
                         url, type, data: $(this).serialize(),
-                        success: function(){
+                        success: function(res){
                             $('#clientModal').addClass('hidden');
                             table.ajax.reload();
                             $('#clientForm')[0].reset();
+                            showToast(res.message, type = 'success');    
                         },
                         error: function(xhr){
                             if(xhr.status===422){

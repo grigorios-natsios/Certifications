@@ -48,7 +48,7 @@ class ClientController extends Controller
             fclose($handle);
         }
 
-        return back()->with('message', 'Clients imported successfully!');
+        return back()->with('message', __('Clients imported successfully'));
     }
 
     public function index()
@@ -129,7 +129,10 @@ class ClientController extends Controller
             $client->certificateCategories()->sync($validated['certificate_category_ids']);
         }
 
-        return response()->json(['message' => 'Client created successfully']);
+        return response()->json([
+            'success' => true,
+            'message' => __('Ο πελάτης δημιουργήθηκε επιτυχώς!')
+        ]);
     }
 
 
@@ -159,13 +162,19 @@ class ClientController extends Controller
             $client->certificateCategories()->detach();
         }
 
-        return response()->json(['message' => 'Client updated successfully']);
+        return response()->json([
+            'success' => true,
+            'message' => __('Ο πελάτης ενημερώθηκε επιτυχώς!')
+        ]);
     }
 
     public function destroy(Client $client)
     {
         $client->delete();
-        return redirect()->route('clients.index')->with('success', 'Client deleted successfully');
+        return response()->json([
+            'success' => true,
+            'message' => __('Ο πελάτης διαγράφηκε επιτυχώς!')
+        ]);
     }
 
     public function generateForClients(Request $request)
@@ -208,7 +217,10 @@ class ClientController extends Controller
             $pdf->save($pdfPath);
         }
 
-        return response()->json(['message' => 'Τα PDF certificates δημιουργήθηκαν επιτυχώς.']);
+        return response()->json([
+            'success' => true,
+            'message' => __('Τα PDF certificates δημιουργήθηκαν επιτυχώς.')
+        ]);
     }
     
 }
