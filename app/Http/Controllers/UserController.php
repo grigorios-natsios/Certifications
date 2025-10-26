@@ -26,15 +26,23 @@ class UserController extends Controller
 
         return DataTables::of($query)
             ->addColumn('actions', function ($row) {
-                return '
-                    <button class="editUser bg-blue-500 text-white px-2 py-1 rounded" data-id="'.$row->id.'">
-                        <i class="fas fa-edit"></i>
+            return'
+                <div class="flex space-x-2 justify-center">
+                    <button 
+                        class="editUser w-8 h-8 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white rounded-full transition" 
+                        data-id="'.$row->id.'" 
+                        title="'.__('Επεξεργασία').'">
+                        <i class="fas fa-edit text-sm"></i>
                     </button>
-                    <button class="deleteUser bg-red-600 text-white px-2 py-1 rounded"data-id="'.$row->id.'">
-                        <i class="fas fa-trash-alt"></i>
+
+                    <button 
+                        class="deleteUser w-8 h-8 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-full transition" 
+                        data-id="'.$row->id.'" 
+                        title="'.__('Διαγραφή').'">
+                        <i class="fas fa-trash-alt text-sm"></i>
                     </button>
-                ';
-            })
+                </div>'
+            ;})
             ->rawColumns(['actions'])
             ->make(true);
     }

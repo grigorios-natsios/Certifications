@@ -1,0 +1,15 @@
+table tbody tr {
+  border-bottom: 1px solid #E5E7EB;
+}
+
+table tbody tr:nth-child(even) {
+  background-color: #EFF6FF;
+}
+
+table.dataTable tbody tr {
+  border-bottom: 1px solid #E5E7EB;
+}
+
+table.dataTable tbody tr:nth-child(even) {
+    background-color: #EFF6FF;
+}

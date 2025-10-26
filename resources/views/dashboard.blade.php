@@ -30,8 +30,8 @@
                         <label class="block text-gray-700 dark:text-gray-200 mb-1">{{ __('Upload CSV') }}</label>
                         <input type="file" name="file" accept=".csv" required class="border rounded p-2 w-full">
                     </div>
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
-                       {{ __('Import Clients') }}
+                    <button type="submit" class="bg-blue-500 text-white text-sm px-3 py-1.5 shadow hover:bg-blue-700 transition">
+                       {{ __('Εισαγωγή / Ενημέρωση Πελατών') }}
                     </button>
                 </form>
             </div>
@@ -40,51 +40,56 @@
         <!-- Προσθήκη & Φίλτρα -->
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="container mx-auto p-6">
-                <div class="flex space-x-4 mb-4">
-                    <button id="addClientBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                        + {{ __('Προσθήκη Πελάτη') }}
+                <div class="flex space-x-2 mb-4">
+                    <button id="addClientBtn" 
+                            class="bg-blue-500 text-white text-sm px-3 py-1.5 shadow hover:bg-blue-700 transition">
+                        <i class="fas fa-plus mr-1"></i> {{ __('Προσθήκη Πελάτη') }}
                     </button>
-                     <button id="generatePDFsBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                        {{ __('Δημιουργία Πιστοποιητικών') }}
+
+                    <button id="generatePDFsBtn" 
+                            class="bg-blue-500 text-white text-sm px-3 py-1.5 shadow hover:bg-blue-700 transition">
+                        <i class="fas fa-file-pdf mr-1"></i> {{ __('Δημιουργία Πιστοποιητικών') }}
                     </button>
                 </div>
 
                 <!-- DataTable -->
                 <div class="overflow-x-auto">
-                    <table id="clientsTable" class="min-w-full table-auto border">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <th class="px-4 py-2">
-                                    <input type="checkbox" id="selectAll">
+                    <table id="clientsTable" class="min-w-full table-auto border border-gray-200 rounded-lg shadow-sm">
+                        <thead class="bg-gray-50">
+                            <tr class="text-gray-700 uppercase text-sm">
+                                <th class="px-3 py-2">
+                                    <input type="checkbox" id="selectAll" class="rounded border-gray-300">
                                 </th>
-                                <th class="px-2 py-2 w-12">{{ __('ID') }}</th>
-                                <th class="px-4 py-2">{{ __('Όνομα') }}</th>
-                                <th class="px-4 py-2">{{ __('Email') }}</th>
-                                <th class="px-4 py-2">{{ __('Κατηγορία') }}</th>
-                                <th class="px-4 py-2">{{ __('Ημερομηνία Δημιουργίας') }}</th>
-                                <th class="px-4 py-2 w-36">{{ __('Ενέργειες') }}</th>
+                                <th class="px-3 py-2 w-12">{{ __('ID') }}</th>
+                                <th class="px-3 py-2">{{ __('Όνομα') }}</th>
+                                <th class="px-3 py-2">{{ __('Email') }}</th>
+                                <th class="px-3 py-2">{{ __('Κατηγορία') }}</th>
+                                <th class="px-3 py-2">{{ __('Ημερομηνία Δημιουργίας') }}</th>
+                                <th class="px-3 py-2 w-36">{{ __('Ενέργειες') }}</th>
                             </tr>
-                            <tr>
+                            <tr class="bg-blue-200 text-gray-600 text-sm">
                                 <th></th>
+                                <th><input type="text" id="filterId" class="form-control form-control-sm w-12 border-gray-300 rounded" placeholder="ID"></th>
+                                <th><input type="text" id="filterName" class="form-control form-control-sm border-gray-300 rounded" placeholder="Όνομα"></th>
+                                <th><input type="text" id="filterEmail" class="form-control form-control-sm border-gray-300 rounded" placeholder="Email"></th>
                                 <th>
-                                    <input type="text" id="filterId" class="form-control form-control-sm w-12" placeholder="ID">
-                                </th>
-                                <th><input type="text" id="filterName" class="form-control form-control-sm" placeholder="Όνομα"></th>
-                                <th><input type="text" id="filterEmail" class="form-control form-control-sm" placeholder="Email"></th>
-                                <th>
-                                    <select id="filterCategory" class="form-control form-control-sm">
-                                        <option value="">Όλες</option>
+                                    <select id="filterCategory" class="form-control form-control-sm border-gray-300 rounded">
+                                        <option value="">{{ __('Όλες') }}</option>
                                         @foreach($categories as $cat)
                                             <option value="{{ $cat->id }}">{{ $cat->name }}</option>
                                         @endforeach
                                     </select>
                                 </th>
-                                <th><input type="date" id="filterDate" class="form-control form-control-sm"></th>
+                                <th><input type="date" id="filterDate" class="form-control form-control-sm border-gray-300 rounded"></th>
                                 <th></th>
                             </tr>
                         </thead>
+                        <tbody class="bg-white divide-y divide-gray-300">
+                            {{-- Rows rendered by DataTables --}}
+                        </tbody>
                     </table>
                 </div>
+
             </div>
         </div>
 
@@ -112,11 +117,11 @@
                     </select>
                     <p id="error_certificate_category_ids" class="mt-1 text-red-500 text-sm"></p>
 
-                    <div class="flex justify-end mt-4">
-                        <button type="button" id="closeModal" class="mr-2 px-4 py-2 rounded border border-gray-400">
+                    <div class="flex justify-end mt-4 space-x-2">
+                        <button type="button" id="closeModal" class="mr-2 px-2 py-1 text-sm border border-gray-400 rounded">
                             {{ __('Άκυρο') }}
                         </button>
-                        <x-primary-button type="submit">{{ __('Αποθήκευση') }}</x-primary-button>
+                        <x-primary-button type="submit" class="px-2 py-1 text-sm">{{ __('Αποθήκευση') }}</x-primary-button>
                     </div>
                 </form>
             </div>
@@ -155,7 +160,10 @@
                         { data: 'created_at', render: function(d){ return d ? new Date(d).toLocaleDateString('el-GR') : ''; }},
                         { data: 'actions', orderable: false, searchable: false }
                     ],
-                    language: { url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/el.json' },
+                    language: { 
+                        emptyTable: '{{ __("Δεν υπάρχουν δεδομένα") }}',
+                        url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/el.json',
+                    },
                     responsive: true, 
                 });
 
@@ -166,7 +174,7 @@
                 $('#addClientBtn').click(() => {
                     $('#clientForm')[0].reset();
                     $('#client_id').val('');
-                    $('#modalTitle').text('Προσθήκη Πελάτη');
+                    $('#modalTitle').text(@json(__('Προσθήκη Πελάτη')));
                     $('#clientModal').removeClass('hidden');
                 });
 
@@ -179,8 +187,8 @@
                     $('#client_id').val(data.id);
                     $('#name').val(data.name);
                     $('#email').val(data.email);
-                    $('#certificate_category_ids').val(data.certificate_categories).trigger('change');
-                    $('#modalTitle').text('Επεξεργασία Πελάτη');
+                    $('#certificate_category_ids').val(data.certificate_categories).trigger('change');;
+                    $('#modalTitle').text(@json(__('Επεξεργασία Πελάτη')));
                     $('#clientModal').removeClass('hidden');
                 });
 

@@ -14,7 +14,7 @@ function showToast(message, type, duration = 3000) {
     toast.className = `text-white px-6 py-3 rounded-lg shadow-lg max-w-md text-center font-semibold opacity-0 transform -translate-y-5 transition-all duration-300`;
 
     // Προσθέτουμε χρώμα ανά τύπο
-    if (type === 'success') toast.classList.add('bg-green-500');
+    if (type === 'success') toast.classList.add('bg-blue-500');
     else if (type === 'error') toast.classList.add('bg-red-500');
     else if (type === 'info') toast.classList.add('bg-blue-500');
 
@@ -66,12 +66,12 @@ function confirmDelete(options = {}) {
     btnContainer.className = 'flex justify-center space-x-4';
 
     const cancelBtn = document.createElement('button');
-    cancelBtn.className = 'px-4 py-2 rounded border border-gray-400 hover:bg-gray-100';
+    cancelBtn.className = 'px-3 py-1 text-sm rounded border border-gray-400 hover:bg-gray-100';
     cancelBtn.textContent = cancelText;
     cancelBtn.onclick = () => modal.remove();
 
     const confirmBtn = document.createElement('button');
-    confirmBtn.className = 'px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600';
+    confirmBtn.className = 'px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600';
     confirmBtn.textContent = confirmText;
     confirmBtn.onclick = () => {
         modal.remove();

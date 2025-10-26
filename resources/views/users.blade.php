@@ -10,14 +10,14 @@
        
         {{-- Φίλτρα --}}
         <div class="flex space-x-4 mb-4">
-            <button id="addUserBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            <button id="addUserBtn" class="bg-blue-500 text-white text-sm px-3 py-1.5 shadow hover:bg-blue-700 transition">
                 {{ __('+ Προσθήκη') }}
             </button>
         </div>
         <div class="overflow-x-auto">
-            <table id="usersTable" class="min-w-full table-auto border">
-                <thead class="bg-gray-100">
-                    <tr>
+            <table id="usersTable" class="bg-white min-w-full table-auto border border-gray-200 rounded-lg shadow-sm">
+                <thead class="bg-gray-50">
+                    <tr class="text-gray-700 uppercase text-sm">
                         <th class="px-4 py-2">{{ __('ID') }}</th>
                         <th class="px-4 py-2">{{ __('Όνομα') }}</th>
                         <th class="px-4 py-2">{{ __('Email') }}</th>
@@ -55,12 +55,11 @@
                     <x-text-input id="password_confirmation" name="password_confirmation" type="password" class="w-full" />
                     <p id="error_password" class="mt-1 text-red-500 text-sm"></p>
                 </div>
-                <div class="flex justify-end mt-4">
-                    <button type="button" id="closeModal"
-                        class="mr-2 px-4 py-2 rounded border border-gray-400">
+                <div class="flex justify-end mt-4 space-x-2">
+                    <button type="button" id="closeModal" class="mr-2 px-2 py-1 text-sm border border-gray-400 rounded">
                         {{ __('Άκυρο') }}
                     </button>
-                    <x-primary-button type="submit">{{ __('Αποθήκευση') }}</x-primary-button>
+                    <x-primary-button type="submit" class="px-2 py-1 text-sm">{{ __('Αποθήκευση') }}</x-primary-button>
                 </div>
             </form>
         </div>
@@ -100,7 +99,10 @@
                     { data: 'actions', orderable: false, searchable: false, className: 'text-center'  }
                 ],
                 responsive: true, 
-                language: { url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/el.json' }
+                language: { 
+                    emptyTable: '{{ __("Δεν υπάρχουν δεδομένα") }}',
+                    url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/el.json',
+                },
             });
 
             // Φίλτρα

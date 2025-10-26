@@ -78,7 +78,7 @@ class ClientController extends Controller
             $query->where('email', 'like', "%{$request->email}%");
         }
 
-        if ($request->certificate_category_id) {
+        if (!empty($request->certificate_category_id)) {
             $query->whereHas('certificateCategories', function ($q) use ($request) {
                 $q->where('certificate_categories.id', $request->certificate_category_id);
             });
@@ -96,9 +96,22 @@ class ClientController extends Controller
                 return $client->certificateCategories->pluck('id')->toArray();
             })
             ->addColumn('actions', function ($client) {
-                $edit = '<button class="editClient bg-blue-500 text-white px-2 py-1 rounded" data-id="'.$client->id.'"> <i class="fas fa-edit"></i></button>';
-                $delete = '<button class="deleteClient  bg-red-600 text-white px-2 py-1 rounded" data-id="'.$client->id.'"> <i class="fas fa-trash-alt"></i></button>';
-                return $edit.' '.$delete;
+                return '
+                <div class="flex space-x-2 justify-center">
+                    <button 
+                        class="editClient w-8 h-8 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white rounded-full transition" 
+                        data-id="'.$client->id.'" 
+                        title="'.__('Επεξεργασία').'">
+                        <i class="fas fa-edit text-sm"></i>
+                    </button>
+
+                    <button 
+                        class="deleteClient w-8 h-8 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-full transition" 
+                        data-id="'.$client->id.'" 
+                        title="'.__('Διαγραφή').'">
+                        <i class="fas fa-trash-alt text-sm"></i>
+                    </button>
+                </div>';
             })
             ->rawColumns(['actions'])
             ->make(true);
