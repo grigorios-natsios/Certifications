@@ -5,66 +5,68 @@
             {{ __('Χρήστες') }}
         </h2>
     </x-slot>
-
-    <div class="container mx-auto p-6">
-       
-        {{-- Φίλτρα --}}
-        <div class="flex space-x-4 mb-4">
-            <button id="addUserBtn" class="bg-blue-500 text-white text-sm px-3 py-1.5 shadow hover:bg-blue-700 transition">
-                {{ __('+ Προσθήκη') }}
-            </button>
+    <div class="py-12 space-y-6">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-6">
+                <div class="container mx-auto p-6">
+                    <div class="flex space-x-4 mb-4">
+                        <button id="addUserBtn" class="bg-blue-500 text-white text-sm px-3 py-1.5 shadow hover:bg-blue-700 transition">
+                            {{ __('+ Προσθήκη') }}
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table id="usersTable" class="bg-white min-w-full table-auto border border-gray-200 rounded-lg shadow-sm">
+                            <thead class="bg-gray-50">
+                                <tr class="text-gray-700 uppercase text-sm">
+                                    <th class="px-4 py-2">{{ __('ID') }}</th>
+                                    <th class="px-4 py-2">{{ __('Όνομα') }}</th>
+                                    <th class="px-4 py-2">{{ __('Email') }}</th>
+                                    <th class="px-4 py-2">{{ __('Ημερομηνία') }}</th>
+                                    <th class="px-4 py-2">{{ __('Ενέργειες') }}</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="overflow-x-auto">
-            <table id="usersTable" class="bg-white min-w-full table-auto border border-gray-200 rounded-lg shadow-sm">
-                <thead class="bg-gray-50">
-                    <tr class="text-gray-700 uppercase text-sm">
-                        <th class="px-4 py-2">{{ __('ID') }}</th>
-                        <th class="px-4 py-2">{{ __('Όνομα') }}</th>
-                        <th class="px-4 py-2">{{ __('Email') }}</th>
-                        <th class="px-4 py-2">{{ __('Ημερομηνία') }}</th>
-                        <th class="px-4 py-2">{{ __('Ενέργειες') }}</th>
-                    </tr>
-                </thead>
-            </table>
+
+        {{-- Modal --}}
+        <div id="userModal" class="hidden fixed inset-0 bg-gray-800/60 flex items-center justify-center">
+            <div class="bg-white rounded-lg shadow-xl w-96 p-6">
+                <h3 class="text-lg font-semibold mb-4" id="modalTitle">{{ __('Προσθήκη Χρήστη') }}</h3>
+                <form id="userForm">
+                    @csrf
+                    <input type="hidden" id="user_id" name="user_id">
+                    <div class="mb-3">
+                        <x-input-label for="name" :value="__('Όνομα')" />
+                        <x-text-input id="name" name="name" type="text" required class="w-full" />
+                        <p id="error_name" class="mt-1 text-red-500 text-sm"></p>
+                    </div>
+                    <div class="mb-3">
+                        <x-input-label for="email" :value="__('Email')" />
+                        <x-text-input id="email" name="email" type="email" required class="w-full" />
+                        <p id="error_email" class="mt-1 text-red-500 text-sm"></p>
+                    </div>
+                    <div class="mb-3">
+                        <x-input-label for="password" :value="__('Κωδικός')" />
+                        <x-text-input id="password" name="password" type="password" class="w-full" />
+                    </div>
+                    <div class="mb-3">
+                        <x-input-label for="password_confirmation" :value="__('Επιβεβαίωση Κωδικού')" />
+                        <x-text-input id="password_confirmation" name="password_confirmation" type="password" class="w-full" />
+                        <p id="error_password" class="mt-1 text-red-500 text-sm"></p>
+                    </div>
+                    <div class="flex justify-end mt-4 space-x-2">
+                        <button type="button" id="closeModal" class="mr-2 px-2 py-1 text-sm border border-gray-400 rounded">
+                            {{ __('Άκυρο') }}
+                        </button>
+                        <x-primary-button type="submit" class="px-2 py-1 text-sm">{{ __('Αποθήκευση') }}</x-primary-button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
-
-    {{-- Modal --}}
-    <div id="userModal" class="hidden fixed inset-0 bg-gray-800/60 flex items-center justify-center">
-        <div class="bg-white rounded-lg shadow-xl w-96 p-6">
-            <h3 class="text-lg font-semibold mb-4" id="modalTitle">{{ __('Προσθήκη Χρήστη') }}</h3>
-            <form id="userForm">
-                @csrf
-                <input type="hidden" id="user_id" name="user_id">
-                <div class="mb-3">
-                    <x-input-label for="name" :value="__('Όνομα')" />
-                    <x-text-input id="name" name="name" type="text" required class="w-full" />
-                    <p id="error_name" class="mt-1 text-red-500 text-sm"></p>
-                </div>
-                <div class="mb-3">
-                    <x-input-label for="email" :value="__('Email')" />
-                    <x-text-input id="email" name="email" type="email" required class="w-full" />
-                    <p id="error_email" class="mt-1 text-red-500 text-sm"></p>
-                </div>
-                <div class="mb-3">
-                    <x-input-label for="password" :value="__('Κωδικός')" />
-                    <x-text-input id="password" name="password" type="password" class="w-full" />
-                </div>
-                <div class="mb-3">
-                    <x-input-label for="password_confirmation" :value="__('Επιβεβαίωση Κωδικού')" />
-                    <x-text-input id="password_confirmation" name="password_confirmation" type="password" class="w-full" />
-                    <p id="error_password" class="mt-1 text-red-500 text-sm"></p>
-                </div>
-                <div class="flex justify-end mt-4 space-x-2">
-                    <button type="button" id="closeModal" class="mr-2 px-2 py-1 text-sm border border-gray-400 rounded">
-                        {{ __('Άκυρο') }}
-                    </button>
-                    <x-primary-button type="submit" class="px-2 py-1 text-sm">{{ __('Αποθήκευση') }}</x-primary-button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     @push('scripts')
     <script>
         $(document).ready(function() {
