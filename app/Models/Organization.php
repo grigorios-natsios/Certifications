@@ -27,4 +27,10 @@ class Organization extends Model
     {
         return $this->hasMany(Certificate::class);
     }
+
+    public function clientCustomFields()
+    {
+        return $this->hasMany(\App\Models\ClientCustomField::class);
+    }
+
 }

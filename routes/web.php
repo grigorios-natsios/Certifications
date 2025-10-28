@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ClientCustomFieldController;
 
 
 Route::view('/', 'welcome');
@@ -20,7 +21,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('data', [ClientController::class, 'datatable'])->name('clients.data');
     Route::post('generate-pdfs', [ClientController::class, 'generateForClients'])->name('clients.generate-pdfs');
 
-
     Route::get('/users/data', [UserController::class, 'getUsers'])->name('users.data');
     Route::resource('users', UserController::class);
 
@@ -33,6 +33,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('certificates.builder');
     })->name('certificates.builder');
 
+    Route::get('/custom-fields/data', [ClientCustomFieldController::class, 'datatable'])->name('custom-fields.data');
+    Route::resource('custom-fields', ClientCustomFieldController::class);
 });
 
 

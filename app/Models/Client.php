@@ -22,4 +22,14 @@ class Client extends Model
         return $this->belongsToMany(CertificateCategory::class, 'certificate_category_client')
         ->withTimestamps();
     }
+
+    public function customValues()
+    {
+        return $this->hasMany(ClientCustomValue::class);
+    }
+
+    public function customFieldValue($fieldId)
+    {
+        return $this->customValues()->where('custom_field_id', $fieldId)->first();
+    }
 }

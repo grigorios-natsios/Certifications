@@ -9,6 +9,8 @@ use App\Models\Organization;
 use Illuminate\Support\Facades\Auth;
 use Yajra\DataTables\DataTables;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\ClientCustomField;
+use App\Models\ClientCustomValue;
 
 class ClientController extends Controller
 {
@@ -56,9 +58,10 @@ class ClientController extends Controller
        
         $user = Auth::user();
         $organization = $user->organization()->with('users')->first();
+        $customFields = ClientCustomField::where('organization_id', Auth::user()->organization_id)->get();
         $categories = CertificateCategory::all();
 
-        return view('dashboard', compact('categories', 'organization'));
+        return view('dashboard', compact('categories', 'organization', 'customFields'));
     }
 
     public function datatable(Request $request)
@@ -88,12 +91,26 @@ class ClientController extends Controller
             $query->whereDate('created_at', $request->created_at);
         }
 
+        $customFields = $request->input('custom_fields', []);
+
+        if(!empty($customFields)) {
+            foreach($customFields as $fieldId => $value){
+                $query->whereHas('customValues', function($q) use ($fieldId, $value){
+                    $q->where('custom_field_id', $fieldId)
+                    ->where('value', 'like', "%{$value}%");
+                });
+            }
+        }
+
         return DataTables::of($query)
             ->addColumn('category', function($client) {
                 return $client->certificateCategories->pluck('name')->join(', ');
             })
             ->addColumn('certificate_categories', function($client) {
                 return $client->certificateCategories->pluck('id')->toArray();
+            })
+            ->addColumn('custom_fields', function($client) {
+                return $client->customValues->mapWithKeys(fn($v) => [$v->custom_field_id => $v->value])->toArray();
             })
             ->addColumn('actions', function ($client) {
                 return '
@@ -113,7 +130,7 @@ class ClientController extends Controller
                     </button>
                 </div>';
             })
-            ->rawColumns(['actions'])
+            ->rawColumns(['custom_fields', 'actions'])
             ->make(true);
     }
 
@@ -121,7 +138,8 @@ class ClientController extends Controller
     {
         $organizations = Organization::all();
         $categories = CertificateCategory::all();
-        return view('clients.create', compact('organizations', 'categories'));
+        $customFields = ClientCustomField::where('organization_id', Auth::user()->organization_id)->get();
+        return view('clients.create', compact('organizations', 'categories', 'customFields'));
     }
 
     public function store(Request $request)
@@ -137,6 +155,14 @@ class ClientController extends Controller
         $validated['organization_id'] = Auth::user()->organization_id;
 
         $client = Client::create($validated);
+        if ($request->filled('custom_fields')) {
+            foreach ($request->custom_fields as $fieldId => $value) {
+                ClientCustomValue::updateOrCreate(
+                    ['client_id' => $client->id, 'custom_field_id' => $fieldId],
+                    ['value' => $value]
+                );
+            }
+        }
 
         if (!empty($validated['certificate_category_ids'])) {
             $client->certificateCategories()->sync($validated['certificate_category_ids']);
@@ -153,7 +179,8 @@ class ClientController extends Controller
     {
         $organizations = Organization::all();
         $categories = CertificateCategory::all();
-        return view('clients.edit', compact('client', 'organizations', 'categories'));
+        $customFields = ClientCustomField::where('organization_id', Auth::user()->organization_id)->get();
+        return view('clients.edit', compact('client', 'organizations', 'categories', 'customFields'));
     }
 
     public function update(Request $request, Client $client)
@@ -168,6 +195,18 @@ class ClientController extends Controller
         $validated['organization_id'] = Auth::user()->organization_id;
 
         $client->update($validated);
+
+        if ($request->filled('custom_fields')) {
+            foreach ($request->custom_fields as $fieldId => $value) {
+                ClientCustomValue::updateOrCreate(
+                    [
+                        'client_id' => $client->id,
+                        'custom_field_id' => $fieldId
+                    ],
+                    ['value' => $value]
+                );
+            }
+        }
 
         if (!empty($validated['certificate_category_ids'])) {
             $client->certificateCategories()->sync($validated['certificate_category_ids']);

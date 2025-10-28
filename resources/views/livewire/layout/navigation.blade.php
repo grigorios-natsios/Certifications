@@ -64,6 +64,9 @@ new class extends Component
                         <x-dropdown-link :href="route('users.index')" wire:navigate>
                             {{ __('Χρήστες') }}
                         </x-dropdown-link>
+                        <x-dropdown-link :href="route('custom-fields.index')" wire:navigate>
+                            {{ __('Προσαρμοσμένα πεδία') }}
+                        </x-dropdown-link>
                         <!-- Authentication -->
                         <button wire:click="logout" class="w-full text-start">
                             <x-dropdown-link>

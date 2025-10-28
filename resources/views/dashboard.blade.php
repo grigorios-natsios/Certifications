@@ -64,6 +64,9 @@
                                 <th class="px-3 py-2">{{ __('Όνομα') }}</th>
                                 <th class="px-3 py-2">{{ __('Email') }}</th>
                                 <th class="px-3 py-2">{{ __('Κατηγορία') }}</th>
+                                @foreach($customFields as $field)
+                                    <th class="px-3 py-2">{{$field->name}}</th>
+                                @endforeach
                                 <th class="px-3 py-2">{{ __('Ημερομηνία Δημιουργίας') }}</th>
                                 <th class="px-3 py-2 w-36">{{ __('Ενέργειες') }}</th>
                             </tr>
@@ -80,6 +83,12 @@
                                         @endforeach
                                     </select>
                                 </th>
+                                @foreach($customFields as $field)
+                                    <th>
+                                        <input type="text" id="filterfields" data-filter-custom="{{ $field->id }}" placeholder="{{ $field->name }}" 
+                                            class="form-control form-control-sm border-gray-300 rounded w-full">
+                                    </th>
+                                @endforeach
                                 <th><input type="date" id="filterDate" class="form-control form-control-sm border-gray-300 rounded"></th>
                                 <th></th>
                             </tr>
@@ -116,6 +125,24 @@
                         @endforeach
                     </select>
                     <p id="error_certificate_category_ids" class="mt-1 text-red-500 text-sm"></p>
+                    @foreach($customFields as $field)
+                        <div class="mb-3">
+                            <label class="block text-sm text-gray-700">{{ $field->name }}</label>
+                            @php
+                                $value = old("custom_fields.$field->id") 
+                                        ?? (isset($client) ? ($client->customFieldValue($field->id)->value ?? '') : '');
+                            @endphp
+                            @if($field->type === 'text')
+                                <input type="text" name="custom_fields[{{ $field->id }}]" value="{{ $value }}" class="border rounded w-full p-2">
+                            @elseif($field->type === 'number')
+                                <input type="number" name="custom_fields[{{ $field->id }}]" value="{{ $value }}" class="border rounded w-full p-2">
+                            @elseif($field->type === 'date')
+                                <input type="date" name="custom_fields[{{ $field->id }}]" value="{{ $value }}" class="border rounded w-full p-2">
+                            @elseif($field->type === 'checkbox')
+                                <input type="checkbox" name="custom_fields[{{ $field->id }}]" value="1" {{ $value ? 'checked' : '' }}>
+                            @endif
+                        </div>
+                    @endforeach
 
                     <div class="flex justify-end mt-4 space-x-2">
                         <button type="button" id="closeModal" class="mr-2 px-2 py-1 text-sm border border-gray-400 rounded">
@@ -142,6 +169,14 @@
                             d.email = $('#filterEmail').val();
                             d.certificate_category_id = $('#filterCategory').val();
                             d.created_at = $('#filterDate').val();
+                            $('[data-filter-custom]').each(function() {
+                                let fieldId = $(this).data('filter-custom');
+                                let value = $(this).val();
+                                if(value) {
+                                    if(!d.custom_fields) d.custom_fields = {};
+                                    d.custom_fields[fieldId] = value;
+                                }
+                            });
                         }
                     },
                     columns: [
@@ -157,6 +192,16 @@
                         { data: 'name' },
                         { data: 'email' },
                         { data: 'category' },
+                        @foreach($customFields as $field)
+                        {
+                            data: null, // όχι 'custom_fields.{{ $field->id }}' γιατί δεν υπάρχει column στη DB
+                            render: function(data){
+                                return data.custom_fields['{{ $field->id }}'] || '';
+                            },
+                            orderable: false, // δεν μπορείς να κάνεις order
+                            searchable: false, // δεν μπορείς να κάνεις search server-side
+                        },
+                        @endforeach
                         { data: 'created_at', render: function(d){ return d ? new Date(d).toLocaleDateString('el-GR') : ''; }},
                         { data: 'actions', orderable: false, searchable: false }
                     ],
@@ -190,6 +235,18 @@
                     $('#certificate_category_ids').val(data.certificate_categories).trigger('change');;
                     $('#modalTitle').text(@json(__('Επεξεργασία Πελάτη')));
                     $('#clientModal').removeClass('hidden');
+                    if (data.custom_fields) {
+                        for (const [fieldId, value] of Object.entries(data.custom_fields)) {
+                            const input = $(`[name="custom_fields[${fieldId}]"]`);
+                            if (input.attr('type') === 'checkbox') {
+                                input.prop('checked', !!value);
+                            } else {
+                                input.val(value);
+                            }
+                        }
+                    } else {
+                        $('[name^="custom_fields"]').val('').prop('checked', false);
+                    }
                 });
 
                 // Διαγραφή
@@ -293,7 +350,7 @@
                     input.addEventListener('change', filterTable);
                 });
 
-                $('#filterId, #filterName, #filterEmail, #filterCategory, #filterDate').on('blur change', function() {
+                $('#filterId, #filterName, #filterEmail, #filterCategory, #filterDate, #filterfields').on('blur change', function() {
                     table.draw(); // ξανατρέχει το Ajax και φιλτράρει
                 });
             });
