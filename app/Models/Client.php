@@ -10,7 +10,20 @@ class Client extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'email', 'organization_id', 'certificate_category_id'];
+    protected $fillable = [
+        'name',
+        'lastname',
+        'email',
+        'url_slug',
+        'external_id',
+        'organization_id',
+        'certificate_category_id',
+    ];
+
+    public function getFullNameAttribute(): string
+    {
+        return trim(($this->lastname ?? '').' '.($this->name ?? ''));
+    }
 
     public function organization()
     {

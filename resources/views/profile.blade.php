@@ -1,25 +1,35 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Profile') }}
-        </h2>
+        <h1 class="font-bold text-2xl text-slate-800 leading-tight">{{ __('Προφίλ') }}</h1>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            <div class="p-4 sm:p-8 bg-white dark:bg-gray-800 shadow sm:rounded-lg">
+    <div class="py-8">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+            <div class="card p-6 sm:p-8">
+                <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
+                    <span class="w-10 h-10 rounded-lg bg-brand-600 text-white flex items-center justify-center"><i class="fas fa-user-pen"></i></span>
+                    <h2 class="text-lg font-semibold text-slate-800">{{ __('Στοιχεία Προφίλ') }}</h2>
+                </div>
                 <div class="max-w-xl">
                     <livewire:profile.update-profile-information-form />
                 </div>
             </div>
 
-            <div class="p-4 sm:p-8 bg-white dark:bg-gray-800 shadow sm:rounded-lg">
+            <div class="card p-6 sm:p-8">
+                <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
+                    <span class="w-10 h-10 rounded-lg bg-brand-600 text-white flex items-center justify-center"><i class="fas fa-key"></i></span>
+                    <h2 class="text-lg font-semibold text-slate-800">{{ __('Αλλαγή Κωδικού') }}</h2>
+                </div>
                 <div class="max-w-xl">
                     <livewire:profile.update-password-form />
                 </div>
             </div>
 
-            <div class="p-4 sm:p-8 bg-white dark:bg-gray-800 shadow sm:rounded-lg">
+            <div class="card p-6 sm:p-8 border-rose-200">
+                <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
+                    <span class="w-10 h-10 rounded-lg bg-rose-600 text-white flex items-center justify-center"><i class="fas fa-triangle-exclamation"></i></span>
+                    <h2 class="text-lg font-semibold text-rose-700">{{ __('Διαγραφή Λογαριασμού') }}</h2>
+                </div>
                 <div class="max-w-xl">
                     <livewire:profile.delete-user-form />
                 </div>

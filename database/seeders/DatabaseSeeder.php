@@ -14,6 +14,8 @@ class DatabaseSeeder extends Seeder
         // Κάλεσε εδώ όποια seeders θέλεις να εκτελούνται
         $this->call([
             AdminUserSeeder::class,
+            ClientCustomFieldSeeder::class,
+            CertificateCategorySeeder::class,
         ]);
     }
 }

@@ -1,42 +1,32 @@
 <?php
 
+use App\Http\Controllers\PublicCertificateController;
+use App\Livewire\Categories;
+use App\Livewire\Clients;
+use App\Livewire\CustomFields;
+use App\Livewire\Users;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ClientController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\ClientCustomFieldController;
-
 
 Route::view('/', 'welcome');
 
+Route::get('/c/{slug}',                          [PublicCertificateController::class, 'show'])->name('certificate.show');
+Route::get('/c/{slug}/{category?}/preview.pdf',  [PublicCertificateController::class, 'pdf'])->name('certificate.pdf');
+Route::get('/c/{slug}/{category?}/download.pdf', [PublicCertificateController::class, 'download'])->name('certificate.download');
+
 Route::middleware(['auth', 'verified'])->group(function () {
-    
-    // Route::get('/dashboard', function () {
-    //     $user = Auth::user();
-    //     $organization = $user->organization()->with('users')->first();
-    //     return view('dashboard', compact('organization'));
-    // })->name('dashboard');
+    Route::get('/dashboard',             Clients\Index::class)->name('dashboard');
 
-    Route::resource('clients', ClientController::class);
-    Route::get('dashboard', [ClientController::class, 'index'])->name('dashboard');
-    Route::get('data', [ClientController::class, 'datatable'])->name('clients.data');
-    Route::post('generate-pdfs', [ClientController::class, 'generateForClients'])->name('clients.generate-pdfs');
+    Route::get('/clients',               Clients\Index::class)->name('clients.index');
+    Route::get('/clients/create',        Clients\Create::class)->name('clients.create');
+    Route::get('/clients/{client}/edit', Clients\Edit::class)->name('clients.edit');
 
-    Route::get('/users/data', [UserController::class, 'getUsers'])->name('users.data');
-    Route::resource('users', UserController::class);
+    Route::get('/users',                 Users\Index::class)->name('users.index');
+    Route::get('/users/create',          Users\Create::class)->name('users.create');
+    Route::get('/users/{user}/edit',     Users\Edit::class)->name('users.edit');
 
-    Route::get('/certificate-categories', function () {
-        return view('certificate-categories');
-    })->name('certificate-categories.index');
-
-    Route::post('/clients/import', [ClientController::class, 'import'])->name('clients.import');
-    Route::get('/certificates/builder', function () {
-        return view('certificates.builder');
-    })->name('certificates.builder');
-
-    Route::get('/custom-fields/data', [ClientCustomFieldController::class, 'datatable'])->name('custom-fields.data');
-    Route::resource('custom-fields', ClientCustomFieldController::class);
+    Route::get('/categories',            Categories\Index::class)->name('categories.index');
+    Route::get('/custom-fields',         CustomFields\Index::class)->name('custom-fields.index');
 });
-
 
 Route::view('profile', 'profile')
     ->middleware(['auth'])
