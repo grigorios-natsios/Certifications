@@ -16,67 +16,6 @@
     <div class="py-6">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
 
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div class="stat-tile">
-                    <p class="stat-tile-label">{{ __('Σύνολο') }}</p>
-                    <p class="stat-tile-value">{{ number_format($stats['total']) }}</p>
-                    <p class="stat-tile-meta">{{ __('πελάτες') }}</p>
-                </div>
-                <div class="stat-tile">
-                    <p class="stat-tile-label">{{ __('Με κατηγορία') }}</p>
-                    <p class="stat-tile-value">{{ number_format($stats['with_category']) }}</p>
-                    <p class="stat-tile-meta">
-                        @if($stats['total'])
-                            {{ round($stats['with_category'] / $stats['total'] * 100) }}%
-                        @else 0% @endif
-                    </p>
-                </div>
-                <div class="stat-tile">
-                    <p class="stat-tile-label">{{ __('Με URL') }}</p>
-                    <p class="stat-tile-value">{{ number_format($stats['with_slug']) }}</p>
-                    <p class="stat-tile-meta">{{ __('public links') }}</p>
-                </div>
-                <div class="stat-tile">
-                    <p class="stat-tile-label">{{ __('Φετινός μήνας') }}</p>
-                    <p class="stat-tile-value">{{ number_format($stats['this_month']) }}</p>
-                    <p class="stat-tile-meta">{{ __('νέοι') }}</p>
-                </div>
-            </div>
-
-            <div class="card p-5">
-                <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
-                    <div>
-                        <h2 class="section-title">{{ __('Εισαγωγή Excel / CSV') }}</h2>
-                        <p class="text-xs text-slate-500 mt-1 max-w-2xl">
-                            {{ __('Στήλες: ID, Name, Lastname, Start date, End Date, Title, Category, Hours, URL. Νέοι προστίθενται, υπάρχοντες (κατά ID) ενημερώνονται. Όσοι λείπουν δεν διαγράφονται.') }}
-                        </p>
-                    </div>
-                </div>
-                <form wire:submit.prevent="importExcel" class="flex flex-col md:flex-row md:items-end gap-3">
-                    <div class="flex-1">
-                        <input type="file" wire:model="importFile"
-                               accept=".xlsx,.xls,.csv,.ods,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
-                               class="block w-full text-sm text-slate-600 file:me-3 file:py-1.5 file:px-3 file:rounded-md file:border file:border-slate-300 file:bg-white file:text-slate-700 hover:file:bg-slate-50 file:cursor-pointer">
-                        <div class="mt-1 flex items-center gap-2 text-[11px] text-slate-500">
-                            <span>{{ __('Υποστηριζόμενα:') }}</span>
-                            <span class="badge badge-slate">.xlsx</span>
-                            <span class="badge badge-slate">.xls</span>
-                            <span class="badge badge-slate">.csv</span>
-                            <span class="badge badge-slate">.ods</span>
-                            <span class="text-slate-400">· {{ __('μέγιστο 20MB') }}</span>
-                        </div>
-                        <div wire:loading wire:target="importFile" class="text-[11px] text-slate-500 mt-1">
-                            <i class="fas fa-circle-notch fa-spin"></i> {{ __('Ανέβασμα...') }}
-                        </div>
-                        @error('importFile') <p class="text-rose-600 text-xs mt-1">{{ $message }}</p> @enderror
-                    </div>
-                    <button type="submit" class="btn-secondary" wire:loading.attr="disabled" wire:target="importExcel,importFile">
-                        <span wire:loading.remove wire:target="importExcel">{{ __('Εισαγωγή') }}</span>
-                        <span wire:loading wire:target="importExcel">{{ __('Επεξεργασία...') }}</span>
-                    </button>
-                </form>
-            </div>
-
             <div class="section-card">
                 <div class="section-card-head">
                     <div class="flex items-baseline gap-3">
@@ -98,7 +37,7 @@
                             <div x-show="open" x-cloak x-transition.opacity
                                  class="absolute right-0 z-30 mt-1 w-64 bg-white border border-slate-200 rounded-md shadow-lg max-h-96 overflow-y-auto">
                                 <div class="p-2">
-                                    <p class="px-2 pt-1 pb-1.5 text-[11px] uppercase tracking-wider text-slate-400 font-semibold">{{ __('Βασικές στήλες') }}</p>
+                                    <p class="px-2 pt-1 pb-1.5 text-[11px] text-slate-400 font-semibold">{{ __('Βασικές στήλες') }}</p>
                                     @foreach($this->columnDefinitions as $key => $label)
                                         <label class="flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-slate-50 cursor-pointer">
                                             <input type="checkbox" value="{{ $key }}" wire:model.live="visibleColumns"
@@ -108,7 +47,7 @@
                                     @endforeach
 
                                     @if($customFields->count())
-                                        <p class="px-2 pt-3 pb-1.5 text-[11px] uppercase tracking-wider text-slate-400 font-semibold">{{ __('Custom πεδία') }}</p>
+                                        <p class="px-2 pt-3 pb-1.5 text-[11px] text-slate-400 font-semibold">{{ __('Custom πεδία') }}</p>
                                         @foreach($customFields as $field)
                                             <label class="flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-slate-50 cursor-pointer">
                                                 <input type="checkbox" value="cf_{{ $field->id }}" wire:model.live="visibleColumns"
@@ -130,55 +69,61 @@
 
                         <button type="button" wire:click="generatePdfs" class="btn-secondary"
                                 @if(empty($selected)) disabled @endif
-                                onclick="return confirm('Να δημιουργηθούν PDF για τους επιλεγμένους;')">
-                            <i class="fas fa-file-pdf text-xs"></i>
-                            {{ __('Παραγωγή PDF') }}
+                                wire:loading.attr="disabled" wire:target="generatePdfs,sendEmails">
+                            <i class="fas fa-file-pdf text-xs" wire:loading.remove wire:target="generatePdfs"></i>
+                            <i class="fas fa-circle-notch fa-spin text-xs" wire:loading wire:target="generatePdfs"></i>
+                            <span wire:loading.remove wire:target="generatePdfs">{{ __('Παραγωγή PDF') }}</span>
+                            <span wire:loading wire:target="generatePdfs">{{ __('Δημιουργία...') }}</span>
+                        </button>
+
+                        <button type="button" wire:click="sendEmails" class="btn-secondary"
+                                @if(empty($selected)) disabled @endif
+                                wire:loading.attr="disabled" wire:target="sendEmails,generatePdfs">
+                            <i class="fas fa-paper-plane text-xs" wire:loading.remove wire:target="sendEmails"></i>
+                            <i class="fas fa-circle-notch fa-spin text-xs" wire:loading wire:target="sendEmails"></i>
+                            <span wire:loading.remove wire:target="sendEmails">{{ __('Αποστολή Email') }}</span>
+                            <span wire:loading wire:target="sendEmails">{{ __('Αποστολή...') }}</span>
                         </button>
                     </div>
                 </div>
 
-                <div class="border-b border-slate-200 bg-slate-50/40">
+                <div class="border-b border-slate-200 bg-white">
                     <div class="px-5 py-3">
-                        <div class="grid gap-2 md:grid-cols-12 items-end">
-                            <div class="md:col-span-5">
-                                <label class="label">{{ __('Αναζήτηση') }}</label>
-                                <div class="relative">
-                                    <i class="fas fa-magnifying-glass input-icon"></i>
-                                    <input type="text" wire:model.live.debounce.300ms="search"
-                                           placeholder="Όνομα, επώνυμο, email, slug..."
-                                           class="input input-with-icon bg-white">
-                                </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <div class="relative flex-1 min-w-[240px]">
+                                <i class="fas fa-magnifying-glass input-icon"></i>
+                                <input type="text" wire:model.live.debounce.300ms="search"
+                                       placeholder="{{ __('Αναζήτηση: όνομα, επώνυμο, email, slug...') }}"
+                                       class="input input-with-icon bg-white">
+                                @if($search !== '')
+                                    <button type="button" wire:click="$set('search', '')"
+                                            class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                                            title="{{ __('Καθαρισμός') }}">
+                                        <i class="fas fa-xmark text-xs"></i>
+                                    </button>
+                                @endif
                             </div>
-                            <div class="md:col-span-3">
-                                <label class="label">{{ __('Κατηγορία') }}</label>
-                                <select wire:model.live="categoryFilter" class="input bg-white">
-                                    <option value="">{{ __('Όλες') }}</option>
-                                    @foreach($categories as $cat)
-                                        <option value="{{ $cat->id }}">{{ $cat->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="label">{{ __('Ημ/νία από') }}</label>
-                                <input type="date" wire:model.live="dateFrom" class="input bg-white">
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="label">{{ __('Έως') }}</label>
-                                <input type="date" wire:model.live="dateTo" class="input bg-white">
-                            </div>
-                        </div>
 
-                        <div class="flex flex-wrap items-center gap-2 mt-3">
+                            <select wire:model.live="categoryFilter" class="input bg-white w-auto min-w-[180px]">
+                                <option value="">{{ __('Όλες οι κατηγορίες') }}</option>
+                                @foreach($categories as $cat)
+                                    <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                                @endforeach
+                            </select>
+
                             <div class="relative" x-data="{ open: false }" @click.outside="open = false">
-                                <button type="button" @click="open = ! open" class="btn-secondary text-xs py-1.5 px-2.5">
-                                    <i class="fas fa-plus text-[10px]"></i>
-                                    {{ __('Προσθήκη φίλτρου') }}
+                                <button type="button" @click="open = ! open" class="btn-secondary">
+                                    <i class="fas fa-sliders text-xs"></i>
+                                    {{ __('Φίλτρα') }}
+                                    @if($this->activeFilterCount > 0)
+                                        <span class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-brand-600 text-white text-[10px] font-semibold">{{ $this->activeFilterCount }}</span>
+                                    @endif
                                     <i class="fas fa-chevron-down text-[10px] text-slate-400"></i>
                                 </button>
                                 <div x-show="open" x-cloak x-transition.opacity
-                                     class="absolute z-30 mt-1 w-64 bg-white border border-slate-200 rounded-md shadow-lg max-h-72 overflow-y-auto">
+                                     class="absolute right-0 z-30 mt-1 w-72 bg-white border border-slate-200 rounded-md shadow-lg max-h-80 overflow-y-auto">
                                     <div class="p-2">
-                                        <p class="px-2 py-1 text-[11px] uppercase tracking-wider text-slate-400 font-semibold">{{ __('Πεδία') }}</p>
+                                        <p class="px-2 py-1 text-[11px] text-slate-400 font-semibold">{{ __('Πεδία') }}</p>
                                         @php $availableCustom = $customFields->whereNotIn('id', $activeCustomFilters); @endphp
 
                                         @if($hasUrl === '')
@@ -193,60 +138,57 @@
                                         @endif
 
                                         @if($availableCustom->count())
-                                            <p class="px-2 pt-2 pb-1 text-[11px] uppercase tracking-wider text-slate-400 font-semibold">{{ __('Custom') }}</p>
+                                            <p class="px-2 pt-2 pb-1 text-[11px] text-slate-400 font-semibold">{{ __('Custom πεδία') }}</p>
                                             @foreach($availableCustom as $field)
                                                 <button type="button" @click="open = false" wire:click="addCustomFilter({{ $field->id }})"
                                                         class="w-full text-left px-2 py-1.5 text-sm rounded hover:bg-slate-50 flex items-center justify-between">
                                                     <span>{{ $field->name }}</span>
-                                                    <span class="text-slate-400 text-[10px] uppercase">{{ $field->type }}</span>
+                                                    <span class="text-slate-400 text-[10px]">{{ $field->type }}</span>
                                                 </button>
                                             @endforeach
                                         @endif
                                     </div>
                                 </div>
                             </div>
-
-                            @if($this->activeFilterCount > 0)
-                                <span class="text-xs text-slate-500">
-                                    {{ $this->activeFilterCount }} {{ __('ενεργό') }}{{ $this->activeFilterCount > 1 ? 'ά' : '' }} {{ __('φίλτρο') }}{{ $this->activeFilterCount > 1 ? 'α' : '' }}
-                                </span>
-                                <button type="button" wire:click="clearAllFilters" class="text-xs text-slate-500 hover:text-rose-600 underline underline-offset-2">
-                                    {{ __('Καθαρισμός όλων') }}
-                                </button>
-                            @endif
                         </div>
 
                         @if($hasUrl !== '' || count($activeCustomFilters))
-                            <div class="mt-3 grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+                            <div class="mt-3 flex flex-wrap items-center gap-2">
                                 @if($hasUrl !== '')
-                                    <div class="flex items-stretch border border-slate-200 rounded-md bg-white overflow-hidden">
-                                        <span class="px-2.5 py-1.5 bg-slate-50 text-xs text-slate-500 border-r border-slate-200 flex items-center">{{ __('Public URL') }}</span>
-                                        <select wire:model.live="hasUrl" class="border-0 text-sm flex-1 focus:ring-0 focus:border-0">
+                                    <div class="inline-flex items-stretch border border-slate-200 rounded-md bg-white overflow-hidden text-sm">
+                                        <span class="px-2.5 py-1 bg-slate-50 text-xs text-slate-500 border-r border-slate-200 flex items-center">{{ __('Public URL') }}</span>
+                                        <select wire:model.live="hasUrl" class="border-0 text-sm py-1 pr-7 focus:ring-0 focus:border-0">
                                             <option value="yes">{{ __('Έχει') }}</option>
                                             <option value="no">{{ __('Δεν έχει') }}</option>
                                         </select>
-                                        <button type="button" wire:click="$set('hasUrl', '')" class="px-2 text-slate-400 hover:text-rose-600 text-sm" title="Αφαίρεση"><i class="fas fa-xmark"></i></button>
+                                        <button type="button" wire:click="$set('hasUrl', '')" class="px-2 text-slate-400 hover:text-rose-600" title="{{ __('Αφαίρεση') }}">
+                                            <i class="fas fa-xmark text-xs"></i>
+                                        </button>
                                     </div>
                                 @endif
 
                                 @foreach($activeCustomFilters as $fieldId)
                                     @php $field = $customFields->firstWhere('id', $fieldId); @endphp
                                     @if($field)
-                                        <div wire:key="filter-{{ $field->id }}" class="flex items-stretch border border-slate-200 rounded-md bg-white overflow-hidden">
-                                            <span class="px-2.5 py-1.5 bg-slate-50 text-xs text-slate-500 border-r border-slate-200 flex items-center whitespace-nowrap" title="{{ $field->name }}">
+                                        <div wire:key="filter-{{ $field->id }}" class="inline-flex items-stretch border border-slate-200 rounded-md bg-white overflow-hidden text-sm">
+                                            <span class="px-2.5 py-1 bg-slate-50 text-xs text-slate-500 border-r border-slate-200 flex items-center whitespace-nowrap" title="{{ $field->name }}">
                                                 {{ \Illuminate\Support\Str::limit($field->name, 18) }}
                                             </span>
                                             <input
                                                 type="{{ $field->type === 'number' ? 'number' : ($field->type === 'date' ? 'date' : 'text') }}"
                                                 wire:model.live.debounce.400ms="customFilters.{{ $field->id }}"
                                                 placeholder="{{ __('Τιμή...') }}"
-                                                class="border-0 text-sm flex-1 focus:ring-0 focus:border-0 min-w-0">
-                                            <button type="button" wire:click="removeCustomFilter({{ $field->id }})" class="px-2 text-slate-400 hover:text-rose-600 text-sm" title="Αφαίρεση">
-                                                <i class="fas fa-xmark"></i>
+                                                class="border-0 text-sm py-1 px-2 focus:ring-0 focus:border-0 w-36 min-w-0">
+                                            <button type="button" wire:click="removeCustomFilter({{ $field->id }})" class="px-2 text-slate-400 hover:text-rose-600" title="{{ __('Αφαίρεση') }}">
+                                                <i class="fas fa-xmark text-xs"></i>
                                             </button>
                                         </div>
                                     @endif
                                 @endforeach
+
+                                <button type="button" wire:click="clearAllFilters" class="text-xs text-slate-500 hover:text-rose-600 underline underline-offset-2 ml-auto">
+                                    {{ __('Καθαρισμός όλων') }}
+                                </button>
                             </div>
                         @endif
                     </div>
@@ -305,9 +247,12 @@
                                     @endif
                                     <td>
                                         <div class="flex items-center gap-3">
-                                            <span class="avatar w-8 h-8">
-                                                {{ strtoupper(substr($client->lastname ?? $client->name ?? '?', 0, 1)) }}
-                                            </span>
+                                            @php
+                                                $lastInitial = $client->lastname ? mb_strtoupper(mb_substr($client->lastname, 0, 1, 'UTF-8'), 'UTF-8') : '';
+                                                $firstInitial = $client->name ? mb_strtoupper(mb_substr($client->name, 0, 1, 'UTF-8'), 'UTF-8') : '';
+                                                $initials = $lastInitial.$firstInitial ?: '—';
+                                            @endphp
+                                            <span class="avatar w-8 h-8">{{ $initials }}</span>
                                             <div class="min-w-0">
                                                 <p class="font-medium text-slate-900 truncate">
                                                     {{ trim(($client->lastname ?? '').' '.($client->name ?? '')) ?: '—' }}
@@ -330,7 +275,7 @@
                                     @if($this->isColumnVisible('url'))
                                         <td>
                                             @if($client->url_slug)
-                                                <a href="/c/{{ $client->url_slug }}" target="_blank" rel="noopener" class="text-slate-700 hover:text-brand-600 font-mono text-xs">
+                                                <a href="{{ route('certificate.show', $client->url_slug) }}" target="_blank" rel="noopener" class="text-slate-700 hover:text-brand-600 font-mono text-xs">
                                                     {{ $client->url_slug }}
                                                 </a>
                                             @else
@@ -344,7 +289,23 @@
                                     @if($this->isColumnVisible('categories'))
                                         <td>
                                             @forelse($client->certificateCategories as $cat)
-                                                <span class="badge badge-slate">{{ $cat->name }}</span>
+                                                @php
+                                                    $hasPdf = $cat->html_template && $client->url_slug;
+                                                @endphp
+                                                @if($hasPdf)
+                                                    <a href="{{ route('certificate.pdf', ['slug' => $client->url_slug, 'category' => $cat->slug]) }}"
+                                                       target="_blank" rel="noopener"
+                                                       class="badge badge-emerald hover:bg-emerald-100 transition"
+                                                       title="Άνοιγμα PDF — {{ $cat->name }}">
+                                                        <i class="fas fa-file-pdf text-[10px]"></i>
+                                                        {{ $cat->name }}
+                                                    </a>
+                                                @else
+                                                    <span class="badge badge-slate" title="{{ $cat->html_template ? 'Λείπει URL slug' : 'Λείπει template' }}">
+                                                        <i class="fas fa-circle-exclamation text-[10px] text-amber-500"></i>
+                                                        {{ $cat->name }}
+                                                    </span>
+                                                @endif
                                             @empty
                                                 <span class="text-slate-300">—</span>
                                             @endforelse
@@ -359,15 +320,14 @@
                                     @endif
                                     <td class="text-right whitespace-nowrap">
                                         @if($client->url_slug)
-                                            <a href="/c/{{ $client->url_slug }}" target="_blank" rel="noopener" class="btn-icon" title="Προβολή">
+                                            <a href="{{ route('certificate.show', $client->url_slug) }}" target="_blank" rel="noopener" class="btn-icon" title="Προβολή">
                                                 <i class="fas fa-arrow-up-right-from-square text-xs"></i>
                                             </a>
                                         @endif
                                         <a href="{{ route('clients.edit', $client->id) }}" wire:navigate class="btn-icon" title="Επεξεργασία">
                                             <i class="fas fa-pen text-xs"></i>
                                         </a>
-                                        <button wire:click="delete({{ $client->id }})"
-                                                onclick="return confirm('Σίγουρα θέλεις να διαγράψεις αυτόν τον πελάτη;')"
+                                        <button type="button" wire:click="confirmDelete({{ $client->id }})"
                                                 class="btn-icon-danger" title="Διαγραφή">
                                             <i class="fas fa-trash text-xs"></i>
                                         </button>
@@ -394,6 +354,59 @@
                 <div class="px-5 py-3 border-t border-slate-200">
                     {{ $clients->links() }}
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <x-confirm-delete-toast :targetId="$confirmingDeleteId"
+                            message="Σίγουρα θέλεις να διαγράψεις αυτόν τον πελάτη; Τα στοιχεία του χάνονται οριστικά." />
+
+    <div wire:loading.flex wire:target="generatePdfs,sendEmails"
+         class="fixed inset-0 z-[65] bg-slate-900/40 backdrop-blur-[2px] items-center justify-center px-4"
+         style="display: none;">
+        <div class="bg-white rounded-lg shadow-2xl border border-brand-200 p-5 max-w-md w-full">
+            <div class="flex items-start gap-4">
+                <div class="w-12 h-12 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center flex-shrink-0 text-xl">
+                    <i class="fas fa-circle-notch fa-spin"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-slate-900">
+                        <span wire:loading wire:target="generatePdfs">{{ __('Δημιουργία PDF σε εξέλιξη...') }}</span>
+                        <span wire:loading wire:target="sendEmails">{{ __('Αποστολή email σε εξέλιξη...') }}</span>
+                    </p>
+                    <p class="text-sm text-slate-600 mt-1">
+                        {{ __('Επεξεργασία') }} {{ count($selected) }} {{ count($selected) === 1 ? __('εγγραφής') : __('εγγραφών') }} — {{ __('μην κλείσεις τη σελίδα.') }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div x-data="{ result: null, dismiss() { this.result = null; } }"
+         x-on:operation-result.window="result = $event.detail; setTimeout(() => result = null, 5000)"
+         x-show="result" x-cloak
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-[68] flex items-center justify-center pointer-events-none px-4">
+        <div class="bg-white rounded-lg shadow-2xl border pointer-events-auto p-5 max-w-md w-full"
+             :class="result?.type === 'warning' ? 'border-amber-200' : 'border-emerald-200'"
+             @click.outside="dismiss()">
+            <div class="flex items-start gap-4">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 text-xl"
+                     :class="result?.type === 'warning' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'">
+                    <i class="fas" :class="result?.type === 'warning' ? 'fa-triangle-exclamation' : 'fa-circle-check'"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-slate-900" x-text="result?.title"></p>
+                    <p class="text-sm text-slate-600 mt-1" x-text="result?.message"></p>
+                </div>
+                <button type="button" @click="dismiss()" class="text-slate-400 hover:text-slate-600 flex-shrink-0">
+                    <i class="fas fa-xmark text-xs"></i>
+                </button>
             </div>
         </div>
     </div>

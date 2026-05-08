@@ -18,15 +18,29 @@ class Index extends Component
 
     #[Url(as: 'q')] public string $search = '';
 
+    public ?int $confirmingDeleteId = null;
+
     public function updatedSearch() { $this->resetPage(); }
+
+    public function confirmDelete(int $id): void
+    {
+        $this->confirmingDeleteId = $id;
+    }
+
+    public function cancelDelete(): void
+    {
+        $this->confirmingDeleteId = null;
+    }
 
     public function delete(int $id): void
     {
         if ($id === Auth::id()) {
+            $this->confirmingDeleteId = null;
             $this->dispatch('toast', message: 'Δεν μπορείς να διαγράψεις τον εαυτό σου.', type: 'warning');
             return;
         }
         User::where('organization_id', Auth::user()->organization_id)->findOrFail($id)->delete();
+        $this->confirmingDeleteId = null;
         $this->dispatch('toast', message: 'Ο χρήστης διαγράφηκε.', type: 'success');
     }
 

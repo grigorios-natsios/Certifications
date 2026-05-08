@@ -28,6 +28,18 @@ class Index extends Component
     public string $editorName = '';
     public string $editorTemplate = '';
 
+    public ?int $confirmingDeleteId = null;
+
+    public function confirmDelete(int $id): void
+    {
+        $this->confirmingDeleteId = $id;
+    }
+
+    public function cancelDelete(): void
+    {
+        $this->confirmingDeleteId = null;
+    }
+
     protected function rules(): array
     {
         return [
@@ -70,6 +82,7 @@ class Index extends Component
     public function delete(int $id): void
     {
         CertificateCategory::findOrFail($id)->delete();
+        $this->confirmingDeleteId = null;
         $this->dispatch('toast', message: 'Η κατηγορία διαγράφηκε.', type: 'success');
     }
 

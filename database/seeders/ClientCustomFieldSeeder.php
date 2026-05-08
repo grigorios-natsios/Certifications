@@ -17,7 +17,6 @@ class ClientCustomFieldSeeder extends Seeder
             ['name' => 'Διάρκεια (ώρες)',          'type' => 'number', 'is_required' => false],
             ['name' => 'Περίοδος Έναρξης',         'type' => 'date',   'is_required' => false],
             ['name' => 'Περίοδος Λήξης',           'type' => 'date',   'is_required' => false],
-            ['name' => 'Αριθμός ΚΔΒΜ',             'type' => 'text',   'is_required' => false],
         ];
 
         foreach ($defaults as $field) {

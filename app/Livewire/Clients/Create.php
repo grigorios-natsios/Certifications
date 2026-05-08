@@ -6,6 +6,7 @@ use App\Models\CertificateCategory;
 use App\Models\Client;
 use App\Models\ClientCustomField;
 use App\Models\ClientCustomValue;
+use App\Services\QrCodeService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -36,7 +37,7 @@ class Create extends Component
         ];
     }
 
-    public function save()
+    public function save(QrCodeService $qrService)
     {
         $this->validate();
 
@@ -59,6 +60,8 @@ class Create extends Component
                 'value'           => $value,
             ]);
         }
+
+        $qrService->ensureAllFor($client->fresh('certificateCategories'));
 
         session()->flash('toast', ['type' => 'success', 'message' => 'Ο πελάτης δημιουργήθηκε.']);
         return redirect()->route('clients.index');

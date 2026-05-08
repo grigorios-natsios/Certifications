@@ -55,8 +55,7 @@
                                     </td>
                                     <td class="text-right whitespace-nowrap">
                                         <button wire:click="openEdit({{ $field->id }})" class="btn-icon" title="Επεξεργασία"><i class="fas fa-pen text-xs"></i></button>
-                                        <button wire:click="delete({{ $field->id }})"
-                                                onclick="return confirm('Σίγουρα θέλεις να διαγράψεις αυτό το πεδίο;')"
+                                        <button type="button" wire:click="confirmDelete({{ $field->id }})"
                                                 class="btn-icon-danger" title="Διαγραφή"><i class="fas fa-trash text-xs"></i></button>
                                     </td>
                                 </tr>
@@ -120,6 +119,9 @@
             </div>
         @endif
     </div>
+
+    <x-confirm-delete-toast :targetId="$confirmingDeleteId"
+                            message="Σίγουρα θέλεις να διαγράψεις αυτό το πεδίο; Οι τιμές που έχουν αποθηκευτεί στους πελάτες θα χαθούν." />
 
     <div x-data="{ items: [] }"
          x-on:toast.window="items.push({ id: Date.now(), ...$event.detail }); setTimeout(() => items.shift(), 3500)"

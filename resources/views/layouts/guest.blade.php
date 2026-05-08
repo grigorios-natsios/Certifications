@@ -7,8 +7,10 @@
 
         <title>{{ config('app.name', 'Certifications') }}</title>
 
+        <x-favicon />
+
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.bunny.net/css?family=roboto:400,500,600,700&display=swap" rel="stylesheet" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -20,16 +22,7 @@
 
             <div class="relative z-10 flex flex-col items-center">
                 <a href="/" wire:navigate class="flex items-center gap-3 mb-6">
-                    @if(file_exists(public_path('images/logo.png')))
-                        <img src="{{ asset('images/logo.png') }}" alt="Logo" class="h-16 w-auto">
-                    @elseif(file_exists(public_path('images/logo.svg')))
-                        <img src="{{ asset('images/logo.svg') }}" alt="Logo" class="h-16 w-auto">
-                    @elseif(file_exists(public_path('images/logo.jpg')))
-                        <img src="{{ asset('images/logo.jpg') }}" alt="Logo" class="h-16 w-auto">
-                    @else
-                        <x-application-logo class="w-14 h-14" />
-                        <span class="text-2xl font-bold text-slate-800">{{ config('app.name', 'Certifications') }}</span>
-                    @endif
+                    <x-brand-logo class="h-16 w-auto" :fallback-text="config('app.name', 'Certifications')" />
                 </a>
             </div>
 

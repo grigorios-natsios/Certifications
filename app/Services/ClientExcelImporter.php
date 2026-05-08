@@ -12,6 +12,8 @@ use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 
 class ClientExcelImporter
 {
+    public function __construct(private readonly QrCodeService $qrService) {}
+
     /**
      * Excel header → handler key. Header lookup is case-insensitive.
      */
@@ -31,7 +33,6 @@ class ClientExcelImporter
         'title'      => 'cf:Αντικείμενο Προγράμματος',
         'subject'    => 'cf:Αντικείμενο Προγράμματος',
         'hours'      => 'cf:Διάρκεια (ώρες)',
-        'kdvm'       => 'cf:Αριθμός ΚΔΒΜ',
     ];
 
     public function import(string $path, int $organizationId, ?string $extension = null): array
@@ -50,8 +51,9 @@ class ClientExcelImporter
             ->get()->keyBy('name');
 
         $stats = ['inserted' => 0, 'updated' => 0, 'skipped' => 0];
+        $touchedIds = [];
 
-        DB::transaction(function () use ($rows, $columnMap, $categories, $customFields, $organizationId, &$stats) {
+        DB::transaction(function () use ($rows, $columnMap, $categories, $customFields, $organizationId, &$stats, &$touchedIds) {
             foreach ($rows as $row) {
                 $data = $this->mapRow($row, $columnMap);
                 if ($this->isEmptyRow($data)) {
@@ -66,8 +68,17 @@ class ClientExcelImporter
 
                 $this->syncCategory($client, $data, $categories);
                 $this->syncCustomValues($client, $data, $customFields, $organizationId);
+
+                $touchedIds[$client->id] = true;
             }
         });
+
+        foreach (array_keys($touchedIds) as $clientId) {
+            $client = Client::with('certificateCategories')->find($clientId);
+            if ($client) {
+                $this->qrService->ensureAllFor($client);
+            }
+        }
 
         return $stats;
     }

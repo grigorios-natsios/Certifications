@@ -1,17 +1,4 @@
 <div>
-    @push('styles')
-        <link rel="stylesheet" href="https://unpkg.com/grapesjs/dist/css/grapes.min.css">
-        <style>
-            .gjs-block { min-height: auto !important; padding: 8px !important; }
-            .gjs-block-label { font-size: 11px !important; }
-            .gjs-pn-views .gjs-pn-btn { padding: 6px 8px !important; }
-            .cert-placeholder-block {
-                background: #fef2f2; border: 1px dashed #dc2626;
-                color: #b91c1c; padding: 4px 8px; border-radius: 4px;
-                font-size: 13px; display: inline-block;
-            }
-        </style>
-    @endpush
 
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-3">
@@ -70,8 +57,7 @@
                                             {{ __('Σχεδίαση') }}
                                         </button>
                                         <button wire:click="openEdit({{ $cat->id }})" class="btn-icon" title="Μετονομασία"><i class="fas fa-pen text-xs"></i></button>
-                                        <button wire:click="delete({{ $cat->id }})"
-                                                onclick="return confirm('Σίγουρα θέλεις να διαγράψεις αυτή την κατηγορία;')"
+                                        <button type="button" wire:click="confirmDelete({{ $cat->id }})"
                                                 class="btn-icon-danger" title="Διαγραφή"><i class="fas fa-trash text-xs"></i></button>
                                     </td>
                                 </tr>
@@ -127,21 +113,25 @@
         @if($showEditor)
             <div class="fixed inset-0 z-[55] bg-slate-100 flex flex-col"
                  wire:key="editor-{{ $editorCategoryId }}"
-                 x-data="certificateEditor({
+                 x-data="htmlTemplateEditor({
                     initialHtml: @js($editorTemplate),
+                    categoryName: @js($editorName),
                     fields: @js($customFields->all()),
                  })"
-                 x-init="$nextTick(() => mount($refs.canvas))">
+                 x-init="init()">
 
                 <div class="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between gap-4">
                     <div class="flex items-center gap-3 min-w-0">
-                        <span class="w-9 h-9 rounded-md bg-brand-600 text-white flex items-center justify-center"><i class="fas fa-pen-ruler"></i></span>
+                        <span class="w-9 h-9 rounded-md bg-brand-600 text-white flex items-center justify-center"><i class="fas fa-code"></i></span>
                         <div class="min-w-0">
-                            <h2 class="section-title truncate">{{ __('Σχεδίαση Template') }}</h2>
+                            <h2 class="section-title truncate">{{ __('HTML Template') }}</h2>
                             <p class="text-xs text-slate-500 truncate">{{ $editorName }}</p>
                         </div>
                     </div>
-                    <div class="flex gap-2 flex-shrink-0">
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <span x-show="dirty" class="text-xs text-amber-600">
+                            <i class="fas fa-circle text-[8px] mr-1"></i>{{ __('Μη αποθηκευμένες αλλαγές') }}
+                        </span>
                         <button type="button" @click="$wire.closeEditor()" class="btn-secondary">
                             <i class="fas fa-xmark mr-1"></i>{{ __('Κλείσιμο') }}
                         </button>
@@ -151,12 +141,71 @@
                     </div>
                 </div>
 
-                <div class="flex-1 overflow-hidden" wire:ignore>
-                    <div x-ref="canvas" class="h-full w-full"></div>
+                <div class="flex-1 overflow-hidden flex flex-col lg:flex-row">
+                    <div class="flex flex-col lg:w-1/2 border-r border-slate-200 bg-slate-50">
+                        <div class="px-4 py-2 border-b border-slate-200 bg-white flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-2 text-xs text-slate-600 font-medium">
+                                <i class="fas fa-code text-slate-400"></i>
+                                <span>{{ __('HTML') }}</span>
+                                <span x-show="html.length" class="text-slate-400" x-text="html.length + ' ' + '{{ __('χαρακτήρες') }}'"></span>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <button type="button" @click="formatHtml()" class="text-xs px-2 py-1 rounded hover:bg-slate-100 text-slate-600" title="{{ __('Format') }}">
+                                    <i class="fas fa-indent text-[10px]"></i> {{ __('Format') }}
+                                </button>
+                                <button type="button" @click="copyHtml()" class="text-xs px-2 py-1 rounded hover:bg-slate-100 text-slate-600" title="{{ __('Αντιγραφή') }}">
+                                    <i class="fas fa-copy text-[10px]"></i>
+                                </button>
+                                <button type="button" @click="resetHtml()" class="text-xs px-2 py-1 rounded hover:bg-slate-100 text-slate-600" title="{{ __('Επαναφορά') }}">
+                                    <i class="fas fa-rotate-left text-[10px]"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <textarea x-ref="codeEditor"
+                                  x-model="html"
+                                  @input.debounce.250ms="dirty = true; refreshPreview()"
+                                  @keydown.tab.prevent="handleTab($event)"
+                                  spellcheck="false"
+                                  class="flex-1 w-full p-4 bg-white text-slate-800 text-[13px] leading-relaxed font-mono resize-none focus:outline-none border-0"
+                                  style="tab-size: 4; -moz-tab-size: 4;"
+                                  placeholder="{{ __('Επικόλλησε ή γράψε HTML εδώ...') }}"></textarea>
+
+                        <div class="border-t border-slate-200 bg-white px-3 py-2 max-h-44 overflow-y-auto">
+                            <p class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1.5">{{ __('Πεδία (κλικ για εισαγωγή)') }}</p>
+                            <div class="flex flex-wrap gap-1">
+                                <template x-for="ph in placeholders" :key="ph.token">
+                                    <button type="button" @click="insertAtCursor(ph.token)"
+                                            class="text-[11px] px-2 py-0.5 rounded border border-slate-200 bg-slate-50 hover:bg-brand-50 hover:border-brand-200 hover:text-brand-700 text-slate-600 font-mono transition"
+                                            x-text="ph.token"
+                                            :title="ph.label"></button>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col lg:w-1/2 bg-slate-100">
+                        <div class="px-4 py-2 border-b border-slate-200 bg-white flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-2 text-xs text-slate-600 font-medium">
+                                <i class="fas fa-eye text-slate-400"></i>
+                                <span>{{ __('Προεπισκόπηση (με δείγμα δεδομένων)') }}</span>
+                            </div>
+                            <button type="button" @click="refreshPreview()" class="text-xs px-2 py-1 rounded hover:bg-slate-100 text-slate-600" title="{{ __('Ανανέωση') }}">
+                                <i class="fas fa-rotate text-[10px]"></i>
+                            </button>
+                        </div>
+                        <div class="flex-1 overflow-auto p-4">
+                            <iframe x-ref="preview" sandbox="allow-same-origin"
+                                    class="w-full h-full bg-white shadow-sm rounded border border-slate-200"
+                                    style="min-height: 100%"></iframe>
+                        </div>
+                    </div>
                 </div>
             </div>
         @endif
     </div>
+
+    <x-confirm-delete-toast :targetId="$confirmingDeleteId"
+                            message="Σίγουρα θέλεις να διαγράψεις αυτή την κατηγορία; Το template της θα χαθεί οριστικά." />
 
     <div x-data="{ items: [] }"
          x-on:toast.window="items.push({ id: Date.now(), ...$event.detail }); setTimeout(() => items.shift(), 3500)"
@@ -170,137 +219,167 @@
     </div>
 
     @push('scripts')
-        <script src="https://unpkg.com/grapesjs"></script>
         @verbatim
         <script>
-            window.certificateEditor = function ({ initialHtml, fields }) {
+            window.htmlTemplateEditor = function ({ initialHtml, categoryName, fields }) {
+                const corePlaceholders = [
+                    { token: '{{full_name}}',   label: 'Πλήρες Όνομα (Επώνυμο + Όνομα)' },
+                    { token: '{{lastname}}',    label: 'Επώνυμο' },
+                    { token: '{{name}}',        label: 'Όνομα' },
+                    { token: '{{email}}',       label: 'Email' },
+                    { token: '{{url_slug}}',    label: 'URL slug' },
+                    { token: '{{external_id}}', label: 'Excel ID' },
+                    { token: '{{category}}',    label: 'Κατηγορία' },
+                    { token: '{{date}}',        label: 'Σημερινή Ημ/νία' },
+                    { token: '{{qr}}',          label: 'QR Code (img)' },
+                    { token: '{{qr_url}}',      label: 'QR URL (string)' },
+                ];
+
+                const placeholders = corePlaceholders.concat(
+                    (fields || []).map(f => ({
+                        token: '{{field:' + f.name + '}}',
+                        label: 'Custom: ' + f.name + ' (' + f.type + ')',
+                    }))
+                );
+
                 return {
-                    editor: null,
-                    initialHtml,
+                    html: initialHtml || '',
+                    initialHtml: initialHtml || '',
+                    dirty: false,
+                    categoryName,
                     fields,
-                    mount(el) {
-                        if (this.editor) return;
+                    placeholders,
 
-                        const blocks = this.buildBlocks();
-                        const starter = this.initialHtml && this.initialHtml.trim().length
-                            ? this.initialHtml
-                            : `<div class="cert-page" style="position:relative;width:794px;min-height:1123px;background:#fff;padding:60px 80px;font-family:'DejaVu Sans',Arial,sans-serif;color:#1a1a1a;"><h1 style="text-align:center;font-size:48px;letter-spacing:8px;">ΒΕΒΑΙΩΣΗ</h1><p style="text-align:center;">Σύρε στοιχεία από αριστερά για να φτιάξεις το πιστοποιητικό σου.</p></div>`;
-
-                        this.editor = grapesjs.init({
-                            container: el,
-                            height: '100%',
-                            width: 'auto',
-                            fromElement: false,
-                            storageManager: false,
-                            components: starter,
-                            canvas: {
-                                styles: [],
-                                scripts: [],
-                            },
-                            deviceManager: {
-                                devices: [
-                                    { id: 'a4p', name: 'A4 Portrait', width: '794px',  widthMedia: '' },
-                                    { id: 'a4l', name: 'A4 Landscape', width: '1123px', widthMedia: '' },
-                                ],
-                            },
-                            blockManager: {
-                                blocks: blocks,
-                            },
-                        });
-
-                        try { this.editor.setDevice('A4 Portrait'); } catch (e) { /* ignore */ }
+                    init() {
+                        this.$nextTick(() => this.refreshPreview());
                     },
 
-                    buildBlocks() {
-                        const placeholderStyle = "background:#fef2f2;border:1px dashed #dc2626;color:#b91c1c;padding:2px 8px;border-radius:4px;font-weight:600;";
-                        const list = [];
+                    sampleFor(type, name) {
+                        if (type === 'date')   return '01/01/2026';
+                        if (type === 'number') return '40';
+                        return name || 'Δείγμα';
+                    },
 
-                        list.push({
-                            id: 'cert-page', label: '<i class="fa fa-file"></i><div>A4 Σελίδα</div>', category: 'Σελίδα',
-                            content: `<div class="cert-page" style="position:relative;width:794px;min-height:1123px;background:#fff;padding:60px 80px;font-family:'DejaVu Sans',Arial,sans-serif;"></div>`,
-                        });
+                    buildSampleHtml() {
+                        let out = this.html || '';
+                        const today = new Date();
+                        const dd = String(today.getDate()).padStart(2, '0');
+                        const mm = String(today.getMonth() + 1).padStart(2, '0');
+                        const yy = today.getFullYear();
 
-                        const corePlaceholders = [
-                            { value: 'full_name', label: 'Πλήρες Όνομα (Επώνυμο + Όνομα)' },
-                            { value: 'lastname',  label: 'Επώνυμο' },
-                            { value: 'name',      label: 'Όνομα' },
-                            { value: 'email',     label: 'Email' },
-                            { value: 'url_slug',  label: 'URL slug' },
-                            { value: 'external_id', label: 'Excel ID' },
-                            { value: 'category',  label: 'Κατηγορία' },
-                            { value: 'date',      label: 'Σημερινή Ημ/νία' },
-                        ];
-                        corePlaceholders.forEach(p => {
-                            list.push({
-                                id: 'ph-' + p.value, label: p.label, category: 'Πεδία',
-                                content: `<span style="${placeholderStyle}">{{${p.value}}}</span>`,
-                            });
+                        const core = {
+                            full_name:   'Παπαδόπουλος Γιώργος',
+                            lastname:    'Παπαδόπουλος',
+                            name:        'Γιώργος',
+                            email:       'demo@example.com',
+                            url_slug:    'demo-client',
+                            external_id: 'EX-001',
+                            category:    this.categoryName || 'Δείγμα',
+                            date:        dd + '/' + mm + '/' + yy,
+                        };
+
+                        Object.entries(core).forEach(([k, v]) => {
+                            const re = new RegExp('\\{\\{\\s*' + k + '\\s*\\}\\}', 'g');
+                            out = out.replace(re, v);
                         });
 
                         (this.fields || []).forEach(f => {
-                            list.push({
-                                id: 'cf-' + f.id, label: f.name, category: 'Custom Πεδία',
-                                content: `<span style="${placeholderStyle}">{{field:${f.name}}}</span>`,
-                            });
+                            const sample = this.sampleFor(f.type, f.name);
+                            const reId   = new RegExp('\\{\\{\\s*cf_' + f.id + '\\s*\\}\\}', 'g');
+                            const reName = new RegExp('\\{\\{\\s*field:' + f.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\}\\}', 'g');
+                            out = out.replace(reId, sample).replace(reName, sample);
                         });
 
-                        list.push({
-                            id: 'heading', label: 'Τίτλος', category: 'Κείμενο',
-                            content: `<h1 style="text-align:center;font-size:48px;letter-spacing:8px;font-weight:700;margin:0;">ΒΕΒΑΙΩΣΗ</h1>`,
-                        });
-                        list.push({
-                            id: 'subheading', label: 'Υπότιτλος', category: 'Κείμενο',
-                            content: `<h2 style="text-align:center;font-size:24px;letter-spacing:6px;font-weight:300;margin:8px 0 0;">ΠΑΡΑΚΟΛΟΥΘΗΣΗΣ</h2>`,
-                        });
-                        list.push({
-                            id: 'paragraph', label: 'Παράγραφος', category: 'Κείμενο',
-                            content: `<p style="text-align:center;font-size:14px;margin:18px 0;">Νέο κείμενο...</p>`,
-                        });
-                        list.push({
-                            id: 'legal', label: 'Νομικό κείμενο', category: 'Κείμενο',
-                            content: `<p style="text-align:justify;font-size:11px;line-height:1.6;margin:24px 60px;color:#374151;">Σύμφωνα με το ΦΕΚ ...</p>`,
-                        });
+                        const qrUrl = window.location.origin + '/demo-client?cat=' + (this.categoryName || 'demo');
+                        const qrImg = '<img src="' + window.location.origin + '/qr.png?data='
+                                    + encodeURIComponent(qrUrl)
+                                    + '" style="display:block;margin:0 auto;width:22mm;height:22mm;">';
+                        out = out.replace(/\{\{\s*qr\s*\}\}/g, qrImg);
+                        out = out.replace(/\{\{\s*qr_url\s*\}\}/g, qrUrl);
 
-                        list.push({
-                            id: 'image', label: 'Εικόνα', category: 'Στοιχεία',
-                            content: { type: 'image', style: { 'max-width': '200px' } },
-                            activate: true,
-                        });
-                        list.push({
-                            id: 'logo-row', label: 'Σειρά Λογότυπων', category: 'Στοιχεία',
-                            content: `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:40px;"><img src="images/logos/eoppep.png" style="height:60px;"/><img src="images/logos/abm.png" style="height:60px;"/></div>`,
-                        });
-                        list.push({
-                            id: 'signature', label: 'Υπογραφή', category: 'Στοιχεία',
-                            content: `<div style="text-align:center;margin-top:24px;"><div style="border-top:1px solid #475569;width:220px;margin:0 auto;padding-top:8px;"><p style="font-size:14px;font-weight:700;margin:0;">Όνομα Υπογράφοντα</p><p style="font-size:12px;color:#475569;margin:2px 0 0;">Ρόλος / Θέση</p></div></div>`,
-                        });
-                        list.push({
-                            id: 'qr', label: 'QR Placeholder', category: 'Στοιχεία',
-                            content: `<div style="display:inline-block;width:100px;height:100px;border:1px solid #cbd5e1;"></div>`,
-                        });
-                        list.push({
-                            id: 'kdvm', label: 'Γραμμή ΚΔΒΜ', category: 'Στοιχεία',
-                            content: `<p style="text-align:center;font-size:10px;color:#6b7280;letter-spacing:1px;margin-top:6px;">Α. Α. ΚΔΒΜ: <span style="${placeholderStyle}">{{field:Αριθμός ΚΔΒΜ}}</span></p>`,
-                        });
+                        out = out.replace(/\{\{(?:field:[^}]+|cf_\d+|name|lastname|full_name|email|url_slug|external_id|category|date|public|qr|qr_url)\}\}/g, '');
 
-                        list.push({
-                            id: 'spacer', label: 'Κενό', category: 'Layout',
-                            content: `<div style="height:40px;"></div>`,
-                        });
-                        list.push({
-                            id: 'two-col', label: '2 στήλες', category: 'Layout',
-                            content: `<div style="display:flex;gap:20px;margin:16px 0;"><div style="flex:1;">Στήλη 1</div><div style="flex:1;">Στήλη 2</div></div>`,
-                        });
+                        const origin = window.location.origin;
+                        out = out.replace(/(<img[^>]+src=["'])(?!https?:\/\/|data:|\/\/|\/)([^"']+)/gi, '$1' + origin + '/$2');
 
-                        return list;
+                        return out;
+                    },
+
+                    refreshPreview() {
+                        const iframe = this.$refs.preview;
+                        if (!iframe) return;
+                        const doc = iframe.contentDocument || iframe.contentWindow.document;
+                        doc.open();
+                        doc.write(this.buildSampleHtml());
+                        doc.close();
+                    },
+
+                    insertAtCursor(token) {
+                        const ta = this.$refs.codeEditor;
+                        if (!ta) return;
+                        const start = ta.selectionStart;
+                        const end   = ta.selectionEnd;
+                        this.html = this.html.slice(0, start) + token + this.html.slice(end);
+                        this.dirty = true;
+                        this.$nextTick(() => {
+                            ta.focus();
+                            ta.selectionStart = ta.selectionEnd = start + token.length;
+                            this.refreshPreview();
+                        });
+                    },
+
+                    handleTab(e) {
+                        const ta = this.$refs.codeEditor;
+                        const start = ta.selectionStart;
+                        const end   = ta.selectionEnd;
+                        const indent = '    ';
+                        this.html = this.html.slice(0, start) + indent + this.html.slice(end);
+                        this.dirty = true;
+                        this.$nextTick(() => {
+                            ta.selectionStart = ta.selectionEnd = start + indent.length;
+                        });
+                    },
+
+                    formatHtml() {
+                        try {
+                            let html = this.html;
+                            html = html.replace(/>\s+</g, '>\n<');
+                            const lines = html.split('\n');
+                            let depth = 0;
+                            const formatted = lines.map(line => {
+                                const trimmed = line.trim();
+                                if (!trimmed) return '';
+                                if (trimmed.startsWith('</')) depth = Math.max(0, depth - 1);
+                                const out = '    '.repeat(depth) + trimmed;
+                                if (trimmed.startsWith('<') && !trimmed.startsWith('</') && !trimmed.endsWith('/>') && !/<(br|hr|img|input|meta|link)\b/i.test(trimmed) && !/<\/[a-z]+>$/i.test(trimmed)) {
+                                    depth++;
+                                }
+                                return out;
+                            }).filter(l => l !== '').join('\n');
+                            this.html = formatted;
+                            this.dirty = true;
+                            this.refreshPreview();
+                        } catch (e) { /* ignore */ }
+                    },
+
+                    copyHtml() {
+                        if (navigator.clipboard) {
+                            navigator.clipboard.writeText(this.html);
+                            window.dispatchEvent(new CustomEvent('toast', { detail: { type: 'success', message: 'Αντιγράφηκε στο clipboard' } }));
+                        }
+                    },
+
+                    resetHtml() {
+                        if (!confirm('Επαναφορά στην τελευταία αποθηκευμένη έκδοση;')) return;
+                        this.html = this.initialHtml;
+                        this.dirty = false;
+                        this.refreshPreview();
                     },
 
                     save() {
-                        if (!this.editor) return;
-                        const html = this.editor.getHtml();
-                        const css  = this.editor.getCss();
-                        const full = '<style>' + css + '</style>\n' + html;
-                        this.$wire.saveTemplate(full);
+                        this.$wire.saveTemplate(this.html);
+                        this.initialHtml = this.html;
+                        this.dirty = false;
                     },
                 };
             };

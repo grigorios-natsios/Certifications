@@ -92,9 +92,8 @@
                                         <a href="{{ route('users.edit', $user->id) }}" wire:navigate class="btn-icon" title="Επεξεργασία">
                                             <i class="fas fa-pen text-xs"></i>
                                         </a>
-                                        <button wire:click="delete({{ $user->id }})"
+                                        <button type="button" wire:click="confirmDelete({{ $user->id }})"
                                                 @if($user->id === auth()->id()) disabled @endif
-                                                onclick="return confirm('Σίγουρα θέλεις να διαγράψεις αυτόν τον χρήστη;')"
                                                 class="btn-icon-danger" title="Διαγραφή">
                                             <i class="fas fa-trash text-xs"></i>
                                         </button>
@@ -124,6 +123,9 @@
             </div>
         </div>
     </div>
+
+    <x-confirm-delete-toast :targetId="$confirmingDeleteId"
+                            message="Σίγουρα θέλεις να διαγράψεις αυτόν τον χρήστη; Η πρόσβασή του θα ανακληθεί άμεσα." />
 
     <div x-data="{ items: @js(session()->get('toast') ? [array_merge(['id' => time()], session()->pull('toast'))] : []) }"
          x-on:toast.window="items.push({ id: Date.now(), ...$event.detail }); setTimeout(() => items.shift(), 3500)"

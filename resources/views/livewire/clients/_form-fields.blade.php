@@ -28,7 +28,7 @@
             @if($urlSlug)
                 <p class="help-text">
                     <span class="text-slate-400">URL:</span>
-                    <a href="/c/{{ $urlSlug }}" target="_blank" rel="noopener" class="text-brand-600 hover:underline">/c/{{ $urlSlug }}</a>
+                    <a href="{{ url('/'.$urlSlug) }}" target="_blank" rel="noopener" class="text-brand-600 hover:underline">/{{ $urlSlug }}</a>
                 </p>
             @else
                 <p class="help-text">{{ __('Χρησιμοποιείται για το public URL του πιστοποιητικού.') }}</p>

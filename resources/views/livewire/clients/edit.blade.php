@@ -17,7 +17,7 @@
                 </div>
             </div>
             @if($client->url_slug)
-                <a href="/c/{{ $client->url_slug }}" target="_blank" rel="noopener" class="btn-secondary">
+                <a href="{{ route('certificate.show', $client->url_slug) }}" target="_blank" rel="noopener" class="btn-secondary">
                     <i class="fas fa-external-link-alt text-xs"></i> {{ __('Προβολή πιστοποιητικού') }}
                 </a>
             @endif

@@ -31,6 +31,18 @@ class Index extends Component
     public string $type = 'text';
     public bool $is_required = false;
 
+    public ?int $confirmingDeleteId = null;
+
+    public function confirmDelete(int $id): void
+    {
+        $this->confirmingDeleteId = $id;
+    }
+
+    public function cancelDelete(): void
+    {
+        $this->confirmingDeleteId = null;
+    }
+
     protected function rules(): array
     {
         return [
@@ -85,6 +97,7 @@ class Index extends Component
     {
         ClientCustomField::where('organization_id', Auth::user()->organization_id)
             ->findOrFail($id)->delete();
+        $this->confirmingDeleteId = null;
         $this->dispatch('toast', message: 'Το πεδίο διαγράφηκε.', type: 'success');
     }
 

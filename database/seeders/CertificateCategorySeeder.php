@@ -126,9 +126,7 @@ body { margin: 0; padding: 0; font-family: 'DejaVu Sans', Arial, sans-serif; col
             Σύμφωνα με το ΦΕΚ 3350/Β/12-09-2024, ο κάτοχος Βεβαίωσης Παρακολούθησης Ειδικού Προγράμματος Κατάρτισης αποκτά δικαίωμα άσκησης ελεύθερης επαγγελματικής δραστηριότητας σε Μηχανήματα Έργου Ομάδας Β Ειδικότητας 2, τα οποία κατατάσσονται στις περ. 2.7 και 2.8 των άρθρων 2 και 3 της υπό στοιχεία Οικ.1032/166/Φ.Γ.9.6.4(Η)/5.3.2013 υπουργικής απόφασης (ήτοι &gt;10 KW και μέγιστης ανυψωτικής ικανότητας έως 2.500 kgr).
         </p>
 
-        <div class="qr-wrap">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={{url_slug}}" alt="QR"/>
-        </div>
+        <div class="qr-wrap">{{qr}}</div>
 
         <div class="signature">
             <div class="sig-line">
@@ -139,7 +137,7 @@ body { margin: 0; padding: 0; font-family: 'DejaVu Sans', Arial, sans-serif; col
 
         <div class="bottom-logo">
             <img src="images/logos/tsitsis.png" alt="TSITSIS"/>
-            <p class="kdvm">Α. Α. ΚΔΒΜ: {{field:Αριθμός ΚΔΒΜ}}</p>
+            <p class="kdvm">Α. Α. ΚΔΒΜ: 2101537</p>
         </div>
     </div>
 </div>

@@ -16,29 +16,15 @@ new class extends Component
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex items-center">
-                @php
-                    $logoPng = file_exists(public_path('images/logo.png'));
-                    $logoSvg = file_exists(public_path('images/logo.svg'));
-                    $logoJpg = file_exists(public_path('images/logo.jpg'));
-                    $hasLogo = $logoPng || $logoSvg || $logoJpg;
-                @endphp
                 <a href="{{ route('dashboard') }}" wire:navigate class="flex items-center gap-2">
-                    @if($logoPng)
-                        <img src="{{ asset('images/logo.png') }}" alt="Logo" class="h-10 w-auto">
-                    @elseif($logoSvg)
-                        <img src="{{ asset('images/logo.svg') }}" alt="Logo" class="h-10 w-auto">
-                    @elseif($logoJpg)
-                        <img src="{{ asset('images/logo.jpg') }}" alt="Logo" class="h-10 w-auto">
-                    @else
-                        <span class="w-9 h-9 rounded-md bg-brand-600 text-white flex items-center justify-center">
-                            <i class="fas fa-certificate"></i>
-                        </span>
-                        <span class="font-semibold text-slate-800 hidden sm:inline">{{ config('app.name', 'Certifications') }}</span>
-                    @endif
+                    <x-brand-logo class="h-10 w-auto" :fallback-text="config('app.name', 'Certifications')" />
                 </a>
 
                 <div class="hidden sm:flex sm:ms-10 space-x-1">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard') || request()->routeIs('clients.*')" wire:navigate>
+                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
+                        {{ __('Πίνακας') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')" wire:navigate>
                         {{ __('Πελάτες') }}
                     </x-nav-link>
                     <x-nav-link :href="route('categories.index')" :active="request()->routeIs('categories.*')" wire:navigate>
@@ -51,7 +37,7 @@ new class extends Component
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 hover:text-brand-700 transition">
-                            <span x-data="{{ json_encode(['name' => auth()->user()->name]) }}" x-text="name" x-on:profile-updated.window="name = $event.detail.name"></span>
+                            <span x-data="{{ json_encode(['name' => auth()->user()->name]) }}" x-text="name"></span>
                             <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                             </svg>
@@ -91,6 +77,9 @@ new class extends Component
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden border-t border-slate-200">
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
+                {{ __('Πίνακας') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')" wire:navigate>
                 {{ __('Πελάτες') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('categories.index')" :active="request()->routeIs('categories.*')" wire:navigate>
@@ -104,7 +93,9 @@ new class extends Component
                 <div class="font-medium text-sm text-slate-500">{{ auth()->user()->email }}</div>
             </div>
             <div class="mt-3 space-y-1">
-                <x-responsive-nav-link :href="route('profile')" wire:navigate>{{ __('Προφίλ') }}</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('profile')" wire:navigate>
+                    {{ __('Προφίλ') }}
+                </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')" wire:navigate>
                     {{ __('Χρήστες') }}
                 </x-responsive-nav-link>
