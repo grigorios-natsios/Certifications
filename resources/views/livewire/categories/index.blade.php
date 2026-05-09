@@ -6,7 +6,7 @@
                 <h1 class="page-title">{{ __('Κατηγορίες πιστοποιητικών') }}</h1>
                 <p class="page-subtitle">{{ __('HTML templates που γίνονται PDF πιστοποιητικά') }}</p>
             </div>
-            <button wire:click="openCreate" class="btn-primary">
+            <button type="button" onclick="Livewire.dispatch('categories::create')" class="btn-primary">
                 {{ __('Νέα κατηγορία') }}
             </button>
         </div>

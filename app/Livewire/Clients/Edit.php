@@ -39,9 +39,15 @@ class Edit extends Component
         $this->urlSlug    = $client->url_slug ?? '';
         $this->externalId = $client->external_id;
         $this->selectedCategories = $client->certificateCategories->pluck('id')->toArray();
-        $this->customValues = $client->customValues->mapWithKeys(
-            fn ($v) => [$v->custom_field_id => $v->value]
-        )->toArray();
+
+        // customValues is keyed [categoryId][fieldId] => value. Legacy rows with
+        // no category (NULL) are placed under key 0 and stay invisible in the
+        // form, but are preserved on save.
+        $this->customValues = [];
+        foreach ($client->customValues as $cv) {
+            $catKey = (int) ($cv->certificate_category_id ?? 0);
+            $this->customValues[$catKey][$cv->custom_field_id] = $cv->value;
+        }
     }
 
     protected function rules(): array
@@ -74,12 +80,27 @@ class Edit extends Component
 
         $this->client->certificateCategories()->sync($this->selectedCategories);
 
-        foreach ($this->customValues as $fieldId => $value) {
-            if ($value === null || $value === '') continue;
-            ClientCustomValue::updateOrCreate(
-                ['client_id' => $this->client->id, 'custom_field_id' => $fieldId],
-                ['value' => $value]
-            );
+        // Persist values per attached category. Empty fields delete the row so
+        // the certificate doesn't keep stale data.
+        foreach ($this->selectedCategories as $catId) {
+            $values = $this->customValues[$catId] ?? [];
+            foreach ($values as $fieldId => $value) {
+                if ($value === null || $value === '') {
+                    ClientCustomValue::where('client_id', $this->client->id)
+                        ->where('custom_field_id', $fieldId)
+                        ->where('certificate_category_id', $catId)
+                        ->delete();
+                    continue;
+                }
+                ClientCustomValue::updateOrCreate(
+                    [
+                        'client_id'               => $this->client->id,
+                        'custom_field_id'         => $fieldId,
+                        'certificate_category_id' => $catId,
+                    ],
+                    ['value' => $value]
+                );
+            }
         }
 
         $fresh = $this->client->fresh('certificateCategories');

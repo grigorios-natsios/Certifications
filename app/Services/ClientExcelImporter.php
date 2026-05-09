@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\GenerateClientPdfs;
 use App\Models\CertificateCategory;
 use App\Models\Client;
 use App\Models\ClientCustomField;
@@ -53,7 +54,7 @@ class ClientExcelImporter
         $customFields = ClientCustomField::where('organization_id', $organizationId)
             ->get()->keyBy('name');
 
-        $stats = ['inserted' => 0, 'updated' => 0, 'skipped' => 0, 'pdfs_generated' => 0, 'pdfs_regenerated' => 0];
+        $stats = ['inserted' => 0, 'updated' => 0, 'skipped' => 0, 'pdfs_queued' => 0];
         $touched = []; // [client_id => ['was_new' => bool, 'before' => string|null]]
 
         DB::transaction(function () use ($rows, $columnMap, $categories, $customFields, $organizationId, &$stats, &$touched) {
@@ -72,8 +73,8 @@ class ClientExcelImporter
 
                 $client = $this->upsertClient($data, $organizationId, $stats, $existing);
 
-                $this->syncCategory($client, $data, $categories);
-                $this->syncCustomValues($client, $data, $customFields, $organizationId);
+                $category = $this->syncCategory($client, $data, $categories);
+                $this->syncCustomValues($client, $data, $customFields, $organizationId, $category);
 
                 if (! isset($touched[$client->id])) {
                     $touched[$client->id] = [
@@ -85,21 +86,18 @@ class ClientExcelImporter
         });
 
         foreach ($touched as $clientId => $info) {
-            $client = Client::with('certificateCategories', 'customValues.field')->find($clientId);
-            if (! $client) continue;
-
-            $this->qrService->ensureAllFor($client);
-            $client->load('certificateCategories', 'customValues.field');
-
             if ($info['was_new']) {
-                $stats['pdfs_generated'] += $this->pdfStore->regenerateAll($client);
+                GenerateClientPdfs::dispatch($clientId, invalidateFirst: false);
+                $stats['pdfs_queued']++;
                 continue;
             }
 
-            $fingerprintAfter = $this->fingerprint($client);
-            if ($fingerprintAfter !== $info['before']) {
-                $this->pdfStore->invalidate($client);
-                $stats['pdfs_regenerated'] += $this->pdfStore->regenerateAll($client);
+            $client = Client::with('certificateCategories', 'customValues')->find($clientId);
+            if (! $client) continue;
+
+            if ($this->fingerprint($client) !== $info['before']) {
+                GenerateClientPdfs::dispatch($clientId, invalidateFirst: true);
+                $stats['pdfs_queued']++;
             }
         }
 
@@ -131,8 +129,12 @@ class ClientExcelImporter
             'external_id' => $client->external_id,
             'categories'  => $client->certificateCategories->pluck('id')->sort()->values()->all(),
             'custom'      => $client->customValues
-                ->sortBy('custom_field_id')
-                ->map(fn ($v) => [(int) $v->custom_field_id, (string) $v->value])
+                ->sortBy(fn ($v) => [(int) $v->certificate_category_id, (int) $v->custom_field_id])
+                ->map(fn ($v) => [
+                    (int) $v->custom_field_id,
+                    (int) ($v->certificate_category_id ?? 0),
+                    (string) $v->value,
+                ])
                 ->values()
                 ->all(),
         ];
@@ -266,19 +268,25 @@ class ClientExcelImporter
         return $client;
     }
 
-    private function syncCategory(Client $client, array $data, $categories): void
+    private function syncCategory(Client $client, array $data, $categories): ?CertificateCategory
     {
-        if (empty($data['category'])) return;
+        if (empty($data['category'])) return null;
 
         $key = mb_strtolower(trim($data['category']));
         $category = $categories->get($key);
-        if (! $category) return;
+        if (! $category) return null;
 
         $client->certificateCategories()->syncWithoutDetaching([$category->id]);
+        return $category;
     }
 
-    private function syncCustomValues(Client $client, array $data, $customFields, int $organizationId): void
+    private function syncCustomValues(Client $client, array $data, $customFields, int $organizationId, ?CertificateCategory $category): void
     {
+        // Custom values are per-certificate (per category). Without a resolved
+        // category we have no certificate to attach them to, so skip the row's
+        // custom values rather than orphan them.
+        if (! $category) return;
+
         foreach (($data['custom'] ?? []) as $name => $value) {
             $field = $customFields->get($name);
             if (! $field) {
@@ -290,7 +298,11 @@ class ClientExcelImporter
             }
 
             ClientCustomValue::updateOrCreate(
-                ['client_id' => $client->id, 'custom_field_id' => $field->id],
+                [
+                    'client_id'               => $client->id,
+                    'custom_field_id'         => $field->id,
+                    'certificate_category_id' => $category->id,
+                ],
                 ['value' => (string) $value]
             );
         }

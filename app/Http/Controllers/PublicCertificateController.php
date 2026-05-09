@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\Client;
 use App\Services\CertificatePdfRenderer;
 use App\Services\CertificatePdfStore;
@@ -25,6 +26,19 @@ class PublicCertificateController extends Controller
         $selected = $categories->firstWhere('slug', $request->query('cat'))
             ?? $categories->first();
 
+        ActivityLog::record(ActivityLog::ACTION_CERTIFICATE_VIEW, [
+            'organization_id' => $client->organization_id,
+            'client_id'       => $client->id,
+            'client_name'     => trim(($client->lastname ?? '').' '.($client->name ?? '')),
+            'client_email'    => $client->email,
+            'subject'         => $selected->name,
+            'meta'            => [
+                'ip'         => $request->ip(),
+                'user_agent' => substr((string) $request->userAgent(), 0, 255),
+                'category_id' => $selected->id,
+            ],
+        ]);
+
         return view('certificates.public', [
             'client'         => $client,
             'categories'     => $categories,
@@ -44,11 +58,24 @@ class PublicCertificateController extends Controller
         ]);
     }
 
-    public function download(string $slug, ?string $categorySlug, CertificatePdfStore $store, CertificatePdfRenderer $renderer): Response
+    public function download(Request $request, string $slug, ?string $categorySlug, CertificatePdfStore $store, CertificatePdfRenderer $renderer): Response
     {
         [$client, $category] = $this->resolveClientAndCategory($slug, $categorySlug);
 
         $path = $store->ensure($client, $category);
+
+        ActivityLog::record(ActivityLog::ACTION_PDF_DOWNLOAD, [
+            'organization_id' => $client->organization_id,
+            'client_id'       => $client->id,
+            'client_name'     => trim(($client->lastname ?? '').' '.($client->name ?? '')),
+            'client_email'    => $client->email,
+            'subject'         => $category->name,
+            'meta'            => [
+                'ip'         => $request->ip(),
+                'user_agent' => substr((string) $request->userAgent(), 0, 255),
+                'category_id' => $category->id,
+            ],
+        ]);
 
         return response()->download($path, $renderer->filename($client, $category), [
             'Content-Type' => 'application/pdf',
@@ -57,7 +84,7 @@ class PublicCertificateController extends Controller
 
     private function resolveClient(string $slug): Client
     {
-        return Client::with('certificateCategories', 'customValues.field', 'certificatePdfs')
+        return Client::with('organization', 'certificateCategories', 'customValues.field', 'certificatePdfs')
             ->where('url_slug', $slug)
             ->firstOrFail();
     }

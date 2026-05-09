@@ -167,7 +167,18 @@ class CertificatePdfRenderer
             '{{qr_url}}'      => e($certificateUrl),
         ];
 
-        foreach ($client->customValues as $cv) {
+        // Custom values are per-certificate. For each field, prefer the value
+        // scoped to this category; fall back to a legacy (NULL category) value
+        // if no scoped one exists.
+        $valuesForCategory = $client->customValues
+            ->filter(fn ($cv) => $cv->certificate_category_id === $category->id
+                || $cv->certificate_category_id === null)
+            ->groupBy('custom_field_id')
+            ->map(fn ($group) => $group
+                ->sortByDesc(fn ($cv) => $cv->certificate_category_id !== null)
+                ->first());
+
+        foreach ($valuesForCategory as $cv) {
             $value = (string) $cv->value;
 
             if (optional($cv->field)->type === 'date' && $value !== '') {

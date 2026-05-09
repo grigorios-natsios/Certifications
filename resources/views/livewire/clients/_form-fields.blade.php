@@ -71,29 +71,48 @@
 </div>
 
 @if($customFields->count())
+    @php
+        $selectedCategoryObjects = $categories->whereIn('id', $selectedCategories);
+    @endphp
     <div class="form-section">
         <div class="form-section-head">
             <h2 class="section-title">{{ __('Προσαρμοσμένα πεδία') }}</h2>
-            <p class="text-xs text-slate-500 mt-0.5">{{ __('Στοιχεία που εμφανίζονται στο πιστοποιητικό') }}</p>
+            <p class="text-xs text-slate-500 mt-0.5">
+                {{ __('Στοιχεία που εμφανίζονται στο πιστοποιητικό. Συμπληρώνονται ανά κατηγορία.') }}
+            </p>
         </div>
-        <div class="form-section-body grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
-            @foreach($customFields as $field)
-                <div class="@if($field->type === 'checkbox') sm:col-span-2 @endif">
-                    <label class="label-plain">
-                        {{ $field->name }}
-                        @if($field->is_required) <span class="text-rose-500">*</span> @endif
-                    </label>
-                    @if($field->type === 'checkbox')
-                        <label class="inline-flex items-center gap-2 text-sm">
-                            <input type="checkbox" wire:model="customValues.{{ $field->id }}" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
-                            <span class="text-slate-600">{{ __('Ναι') }}</span>
-                        </label>
-                    @else
-                        <input type="{{ $field->type === 'number' ? 'number' : ($field->type === 'date' ? 'date' : 'text') }}"
-                               wire:model="customValues.{{ $field->id }}" class="input">
-                    @endif
+        <div class="form-section-body space-y-5">
+            @forelse($selectedCategoryObjects as $cat)
+                <div class="rounded-lg border border-slate-200 overflow-hidden">
+                    <div class="px-4 py-2.5 bg-slate-50/60 border-b border-slate-200 flex items-center gap-2">
+                        <i class="fas fa-folder text-slate-400 text-xs"></i>
+                        <span class="text-sm font-medium text-slate-700">{{ $cat->name }}</span>
+                    </div>
+                    <div class="p-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+                        @foreach($customFields as $field)
+                            <div class="@if($field->type === 'checkbox') sm:col-span-2 @endif">
+                                <label class="label-plain">
+                                    {{ $field->name }}
+                                    @if($field->is_required) <span class="text-rose-500">*</span> @endif
+                                </label>
+                                @if($field->type === 'checkbox')
+                                    <label class="inline-flex items-center gap-2 text-sm">
+                                        <input type="checkbox" wire:model="customValues.{{ $cat->id }}.{{ $field->id }}" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+                                        <span class="text-slate-600">{{ __('Ναι') }}</span>
+                                    </label>
+                                @else
+                                    <input type="{{ $field->type === 'number' ? 'number' : ($field->type === 'date' ? 'date' : 'text') }}"
+                                           wire:model="customValues.{{ $cat->id }}.{{ $field->id }}" class="input">
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
-            @endforeach
+            @empty
+                <p class="text-sm text-slate-500">
+                    {{ __('Επίλεξε πρώτα κατηγορία πιο πάνω για να συμπληρώσεις τα πεδία του πιστοποιητικού.') }}
+                </p>
+            @endforelse
         </div>
     </div>
 @endif

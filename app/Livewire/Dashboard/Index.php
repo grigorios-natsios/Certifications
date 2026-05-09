@@ -55,10 +55,8 @@ class Index extends Component
             "Ενημερώθηκαν: {$stats['updated']}",
             "Παραλείφθηκαν: {$stats['skipped']}",
         ];
-        $pdfsGenerated   = $stats['pdfs_generated']   ?? 0;
-        $pdfsRegenerated = $stats['pdfs_regenerated'] ?? 0;
-        if ($pdfsGenerated)   $parts[] = "PDF νέα: {$pdfsGenerated}";
-        if ($pdfsRegenerated) $parts[] = "PDF ανανεωμένα: {$pdfsRegenerated}";
+        $pdfsQueued = $stats['pdfs_queued'] ?? 0;
+        if ($pdfsQueued) $parts[] = "PDF στην ουρά: {$pdfsQueued} (παράγονται στο παρασκήνιο)";
 
         $this->dispatch(
             'toast',

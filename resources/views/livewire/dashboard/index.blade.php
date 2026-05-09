@@ -6,11 +6,14 @@
                 <p class="page-subtitle">{{ __('Συνοπτική εικόνα & εισαγωγή πελατών') }}</p>
             </div>
             <div class="toolbar">
-                <a href="{{ route('clients.index') }}" wire:navigate class="btn-secondary">
+                <a href="{{ route('clients.index') }}" wire:navigate
+                   class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 text-sm font-medium text-slate-700 transition">
                     <i class="fas fa-list text-xs"></i>
                     {{ __('Πελάτες') }}
                 </a>
-                <a href="{{ route('clients.create') }}" wire:navigate class="btn-primary">
+                <a href="{{ route('clients.create') }}" wire:navigate
+                   class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-brand-700 to-brand-600 hover:from-brand-600 hover:to-brand-500 text-white text-sm font-semibold shadow-brand transition-all">
+                    <i class="fas fa-plus text-xs" aria-hidden="true"></i>
                     {{ __('Νέος πελάτης') }}
                 </a>
             </div>
@@ -32,27 +35,31 @@
                 $sortedCats = $categories->sortByDesc('clients_count')->values();
             @endphp
 
-            <div class="card overflow-hidden">
-                <div class="px-5 py-4 flex flex-wrap items-center gap-x-8 gap-y-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-11 h-11 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center text-base flex-shrink-0">
-                            <i class="fas fa-users"></i>
+            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:border-slate-300 transition-colors">
+                <div class="px-6 py-5 flex flex-wrap items-center gap-x-10 gap-y-5">
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-rose-500 to-brand-600 flex items-center justify-center shadow-md flex-shrink-0">
+                            <i class="fas fa-users text-white text-base"></i>
                         </div>
                         <div>
-                            <p class="text-2xl font-semibold text-slate-900 tabular-nums leading-none">{{ number_format($stats['total']) }}</p>
-                            <p class="text-xs text-slate-500 mt-1.5">{{ __('Σύνολο πελατών') }}</p>
+                            <p class="text-xs text-slate-500 font-medium mb-1">{{ __('Σύνολο πελατών') }}</p>
+                            <p class="text-2xl font-bold text-slate-900 tabular-nums tracking-tight leading-none">
+                                {{ number_format($stats['total']) }}
+                            </p>
                         </div>
                     </div>
 
                     <div class="hidden sm:block self-stretch w-px bg-slate-200"></div>
 
-                    <div class="flex items-center gap-3">
-                        <div class="w-11 h-11 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-base flex-shrink-0">
-                            <i class="fas fa-calendar-check"></i>
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-md flex-shrink-0">
+                            <i class="fas fa-calendar-check text-white text-base"></i>
                         </div>
                         <div>
-                            <p class="text-2xl font-semibold text-slate-900 tabular-nums leading-none">{{ number_format($stats['this_year']) }}</p>
-                            <p class="text-xs text-slate-500 mt-1.5">{{ __('Νέοι το') }} {{ now()->year }}</p>
+                            <p class="text-xs text-slate-500 font-medium mb-1">{{ __('Νέοι το') }} {{ now()->year }}</p>
+                            <p class="text-2xl font-bold text-slate-900 tabular-nums tracking-tight leading-none">
+                                {{ number_format($stats['this_year']) }}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -60,27 +67,27 @@
                 @if($sortedCats->isNotEmpty())
                     <div class="border-t border-slate-100"></div>
 
-                    <div class="px-5 py-4">
-                        <p class="text-xs font-semibold text-slate-500 mb-3">{{ __('Κατανομή ανά κατηγορία') }}</p>
-                        <div class="space-y-2.5">
+                    <div class="px-6 py-5">
+                        <p class="text-[11px] uppercase tracking-[0.12em] text-slate-500 font-semibold mb-3.5">{{ __('Κατανομή ανά κατηγορία') }}</p>
+                        <div class="space-y-2">
                             @foreach($sortedCats as $cat)
                                 @php
                                     $p = $palette[$loop->index % count($palette)];
                                     $pct = $stats['total'] > 0 ? ($cat->clients_count / $stats['total']) * 100 : 0;
                                 @endphp
                                 <a href="{{ route('clients.index', ['categoryFilter' => $cat->id]) }}" wire:navigate
-                                   class="block rounded-md px-2 -mx-2 py-1 hover:bg-slate-50 transition group">
+                                   class="block rounded-lg px-2.5 -mx-2.5 py-2 hover:bg-slate-50 transition group">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-7 h-7 rounded-md {{ $p['bg'] }} {{ $p['fg'] }} flex items-center justify-center text-xs flex-shrink-0">
+                                        <div class="w-8 h-8 rounded-lg {{ $p['bg'] }} {{ $p['fg'] }} flex items-center justify-center text-xs flex-shrink-0">
                                             <i class="fas {{ $p['icon'] }}"></i>
                                         </div>
                                         <div class="flex-1 min-w-0">
                                             <div class="flex items-center justify-between gap-2 mb-1">
-                                                <span class="text-sm text-slate-700 truncate group-hover:text-slate-900">
+                                                <span class="text-sm font-medium text-slate-700 truncate group-hover:text-slate-900">
                                                     {{ $cat->name }}
                                                 </span>
                                                 <span class="text-xs tabular-nums whitespace-nowrap">
-                                                    <span class="font-semibold text-slate-900">{{ number_format($cat->clients_count) }}</span>
+                                                    <span class="font-bold text-slate-900">{{ number_format($cat->clients_count) }}</span>
                                                     <span class="ml-1.5 text-slate-400">{{ round($pct) }}%</span>
                                                 </span>
                                             </div>
@@ -97,14 +104,14 @@
                 @endif
             </div>
 
-            <div class="card p-5">
-                <div class="flex items-start gap-3 mb-4">
-                    <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
-                        <i class="fas fa-file-import"></i>
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 hover:border-slate-300 transition-colors">
+                <div class="flex items-start gap-3.5 mb-4">
+                    <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-md flex-shrink-0">
+                        <i class="fas fa-file-import text-white text-base"></i>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <h2 class="section-title">{{ __('Εισαγωγή Excel / CSV') }}</h2>
-                        <p class="text-xs text-slate-500 mt-1 max-w-2xl">
+                        <h2 class="text-base font-bold text-slate-900 tracking-tight">{{ __('Εισαγωγή Excel / CSV') }}</h2>
+                        <p class="text-xs text-slate-500 mt-1 max-w-2xl leading-relaxed">
                             {{ __('Στήλες: ID, Name, Lastname, Start date, End Date, Title, Category, Hours, URL. Νέοι προστίθενται, υπάρχοντες (κατά ID) ενημερώνονται. Όσοι λείπουν δεν διαγράφονται.') }}
                         </p>
                     </div>
@@ -150,7 +157,7 @@
                              'border-emerald-200 bg-emerald-50/30': fileName && !isDragging,
                              'cursor-pointer': !fileName,
                          }"
-                         class="relative border-2 border-dashed rounded-lg p-6 transition">
+                         class="relative border-2 border-dashed rounded-xl p-7 transition">
 
                         <input type="file" wire:model="importFile" x-ref="fileInput"
                                accept=".xlsx,.xls,.csv,.ods,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
@@ -162,9 +169,9 @@
                                 <i class="fas fa-cloud-arrow-up"></i>
                             </div>
                             <p class="text-sm text-slate-700">
-                                <span class="font-medium">{{ __('Σύρε εδώ το αρχείο') }}</span>
+                                <span class="font-semibold">{{ __('Σύρε εδώ το αρχείο') }}</span>
                                 <span class="text-slate-500">{{ __('ή') }}</span>
-                                <span class="text-emerald-700 font-medium">{{ __('πάτησε για επιλογή') }}</span>
+                                <span class="text-emerald-700 font-semibold">{{ __('πάτησε για επιλογή') }}</span>
                             </p>
                             <p class="text-[11px] text-slate-500 mt-2">
                                 .xlsx · .xls · .csv · .ods <span class="text-slate-400">· {{ __('έως 20MB') }}</span>
@@ -176,11 +183,11 @@
                                 <i class="fas fa-file-excel"></i>
                             </div>
                             <div class="min-w-0 flex-1">
-                                <p class="text-sm font-medium text-slate-900 truncate" x-text="fileName"></p>
+                                <p class="text-sm font-semibold text-slate-900 truncate" x-text="fileName"></p>
                                 <p class="text-[11px] text-slate-500 mt-0.5">
                                     <span x-text="fileSize"></span>
                                     <span class="mx-1 text-slate-300">·</span>
-                                    <span class="text-emerald-700">{{ __('έτοιμο για εισαγωγή') }}</span>
+                                    <span class="text-emerald-700 font-medium">{{ __('έτοιμο για εισαγωγή') }}</span>
                                 </p>
                             </div>
                             <button type="button" @click.stop="clearFile()"
@@ -191,15 +198,16 @@
                         </div>
 
                         <div wire:loading wire:target="importFile"
-                             class="absolute inset-0 bg-white/85 rounded-lg flex items-center justify-center text-xs text-slate-600">
+                             class="absolute inset-0 bg-white/85 rounded-xl flex items-center justify-center text-xs text-slate-600">
                             <i class="fas fa-circle-notch fa-spin mr-2"></i> {{ __('Ανέβασμα...') }}
                         </div>
                     </div>
 
                     @error('importFile') <p class="text-rose-600 text-xs mt-2">{{ $message }}</p> @enderror
 
-                    <div class="flex justify-end mt-3">
-                        <button type="submit" class="btn-primary"
+                    <div class="flex justify-end mt-4">
+                        <button type="submit"
+                                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-brand-700 to-brand-600 hover:from-brand-600 hover:to-brand-500 text-white text-sm font-semibold shadow-brand transition-all"
                                 :disabled="!fileName"
                                 :class="{ 'opacity-50 cursor-not-allowed': !fileName }"
                                 wire:loading.attr="disabled" wire:target="importExcel">
@@ -211,6 +219,8 @@
                     </div>
                 </form>
             </div>
+
+            <livewire:dashboard.activity-log />
         </div>
     </div>
 

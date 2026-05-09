@@ -6,6 +6,7 @@ use App\Models\CertificateCategory;
 use App\Models\ClientCustomField;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -49,6 +50,7 @@ class Index extends Component
 
     public function updatedSearch() { $this->resetPage(); }
 
+    #[On('categories::create')]
     public function openCreate(): void
     {
         $this->resetForm();

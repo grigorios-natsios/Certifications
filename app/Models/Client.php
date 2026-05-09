@@ -41,9 +41,18 @@ class Client extends Model
         return $this->hasMany(ClientCustomValue::class);
     }
 
-    public function customFieldValue($fieldId)
+    public function customFieldValue(int $fieldId, ?int $categoryId = null)
     {
-        return $this->customValues()->where('custom_field_id', $fieldId)->first();
+        $q = $this->customValues()->where('custom_field_id', $fieldId);
+
+        if ($categoryId !== null) {
+            // Prefer the value scoped to this category; fall back to a legacy
+            // (NULL category) value if no scoped value exists.
+            $scoped = (clone $q)->where('certificate_category_id', $categoryId)->first();
+            return $scoped ?? (clone $q)->whereNull('certificate_category_id')->first();
+        }
+
+        return $q->first();
     }
 
     public function certificatePdfs()

@@ -52,13 +52,19 @@ class Create extends Component
 
         $client->certificateCategories()->sync($this->selectedCategories);
 
-        foreach ($this->customValues as $fieldId => $value) {
-            if ($value === null || $value === '') continue;
-            ClientCustomValue::create([
-                'client_id'       => $client->id,
-                'custom_field_id' => $fieldId,
-                'value'           => $value,
-            ]);
+        // Custom values are scoped per category (per certificate). Only persist
+        // values that belong to a category the client is actually attached to.
+        foreach ($this->selectedCategories as $catId) {
+            $values = $this->customValues[$catId] ?? [];
+            foreach ($values as $fieldId => $value) {
+                if ($value === null || $value === '') continue;
+                ClientCustomValue::create([
+                    'client_id'               => $client->id,
+                    'custom_field_id'         => $fieldId,
+                    'certificate_category_id' => $catId,
+                    'value'                   => $value,
+                ]);
+            }
         }
 
         $qrService->ensureAllFor($client->fresh('certificateCategories'));

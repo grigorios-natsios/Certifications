@@ -2,13 +2,17 @@
 
 namespace App\Livewire\Clients;
 
-use App\Mail\CertificateReadyMail;
+use App\Jobs\SendCertificateEmailJob;
+use App\Mail\BulkEmailReportMail;
+use App\Models\ActivityLog;
 use App\Models\CertificateCategory;
 use App\Models\Client;
 use App\Models\ClientCustomField;
 use App\Services\CertificatePdfRenderer;
 use App\Services\CertificatePdfStore;
+use Illuminate\Bus\Batch;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Attributes\Layout;
@@ -341,9 +345,11 @@ class Index extends Component
             ->whereIn('id', $this->selected)
             ->get();
 
-        $sent = 0;
+        $reportRecipient = config('mail.bulk_report_recipient', 'info@lianaoumidou.gr');
+
+        $jobs = [];
         $skipped = 0;
-        $failed = 0;
+        $delaySeconds = 0;
 
         foreach ($clients as $client) {
             if (! $client->email || ! $client->url_slug) {
@@ -351,29 +357,60 @@ class Index extends Component
                 continue;
             }
 
-            try {
-                Mail::to($client->email)->send(new CertificateReadyMail($client));
-                $sent++;
-            } catch (\Throwable $e) {
-                $failed++;
-                Log::error('Certificate email failed', [
-                    'client_id' => $client->id,
-                    'error'     => $e->getMessage(),
-                ]);
-            }
+            $jobs[] = (new SendCertificateEmailJob($client->id, $reportRecipient))
+                ->delay(now()->addSeconds($delaySeconds));
+            $delaySeconds += 15;
         }
 
-        $parts = ["Στάλθηκαν: $sent"];
-        if ($skipped) $parts[] = "Παραλείφθηκαν: $skipped";
-        if ($failed)  $parts[] = "Αποτυχίες: $failed";
+        $queued = count($jobs);
+
+        if ($queued === 0) {
+            $this->selected = [];
+            $this->selectAll = false;
+            $this->dispatch('toast',
+                message: "Δεν στάλθηκε κανένα email — οι επιλεγμένοι πελάτες δεν έχουν email/URL ($skipped παραλείφθηκαν).",
+                type: 'warning'
+            );
+            return;
+        }
+
+        $batch = Bus::batch($jobs)
+            ->name('Bulk Certificate Emails')
+            ->allowFailures()
+            ->finally(function (Batch $batch) use ($reportRecipient) {
+                try {
+                    Mail::to($reportRecipient)->send(new BulkEmailReportMail($batch->id));
+                } catch (\Throwable $e) {
+                    Log::error('Bulk email report send failed', [
+                        'batch_id' => $batch->id,
+                        'error'    => $e->getMessage(),
+                    ]);
+                }
+            })
+            ->dispatch();
+
+        ActivityLog::record(ActivityLog::ACTION_EMAIL_BATCH, [
+            'organization_id' => Auth::user()->organization_id,
+            'subject'         => "$queued emails — αναφορά στο $reportRecipient",
+            'meta'            => [
+                'batch_id'         => $batch->id,
+                'total_jobs'       => $queued,
+                'skipped'          => $skipped,
+                'report_recipient' => $reportRecipient,
+                'triggered_by'     => Auth::user()->email,
+            ],
+        ]);
 
         $this->selected = [];
         $this->selectAll = false;
 
+        $parts = ["Στην ουρά: $queued"];
+        if ($skipped) $parts[] = "Παραλείφθηκαν: $skipped";
+
         $this->dispatch('operation-result',
-            title: 'Αποστολή email ολοκληρώθηκε',
-            message: implode(' · ', $parts),
-            type: $failed ? 'warning' : 'success'
+            title: 'Τα email προστέθηκαν στην ουρά αποστολής',
+            message: implode(' · ', $parts)." — όταν ολοκληρωθεί η αποστολή, θα λάβετε αναφορά στο $reportRecipient με τα emails που στάλθηκαν και τυχόν αποτυχίες.",
+            type: 'success'
         );
     }
 

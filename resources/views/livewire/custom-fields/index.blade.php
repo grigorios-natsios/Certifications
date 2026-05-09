@@ -5,7 +5,7 @@
                 <h1 class="page-title">{{ __('Προσαρμοσμένα πεδία') }}</h1>
                 <p class="page-subtitle">{{ __('Επιπλέον πεδία πελατών (ΑΦΜ, Τηλέφωνο, ώρες κ.λπ.)') }}</p>
             </div>
-            <button wire:click="openCreate" class="btn-primary">
+            <button type="button" onclick="Livewire.dispatch('custom-fields::create')" class="btn-primary">
                 {{ __('Νέο πεδίο') }}
             </button>
         </div>
