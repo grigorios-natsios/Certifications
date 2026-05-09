@@ -12,7 +12,10 @@ use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 
 class ClientExcelImporter
 {
-    public function __construct(private readonly QrCodeService $qrService) {}
+    public function __construct(
+        private readonly QrCodeService $qrService,
+        private readonly CertificatePdfStore $pdfStore,
+    ) {}
 
     /**
      * Excel header → handler key. Header lookup is case-insensitive.
@@ -50,10 +53,10 @@ class ClientExcelImporter
         $customFields = ClientCustomField::where('organization_id', $organizationId)
             ->get()->keyBy('name');
 
-        $stats = ['inserted' => 0, 'updated' => 0, 'skipped' => 0];
-        $touchedIds = [];
+        $stats = ['inserted' => 0, 'updated' => 0, 'skipped' => 0, 'pdfs_generated' => 0, 'pdfs_regenerated' => 0];
+        $touched = []; // [client_id => ['was_new' => bool, 'before' => string|null]]
 
-        DB::transaction(function () use ($rows, $columnMap, $categories, $customFields, $organizationId, &$stats, &$touchedIds) {
+        DB::transaction(function () use ($rows, $columnMap, $categories, $customFields, $organizationId, &$stats, &$touched) {
             foreach ($rows as $row) {
                 $data = $this->mapRow($row, $columnMap);
                 if ($this->isEmptyRow($data)) {
@@ -64,23 +67,77 @@ class ClientExcelImporter
                     continue;
                 }
 
-                $client = $this->upsertClient($data, $organizationId, $stats);
+                $existing = $this->findExisting($data, $organizationId);
+                $fingerprintBefore = $existing ? $this->fingerprint($existing) : null;
+
+                $client = $this->upsertClient($data, $organizationId, $stats, $existing);
 
                 $this->syncCategory($client, $data, $categories);
                 $this->syncCustomValues($client, $data, $customFields, $organizationId);
 
-                $touchedIds[$client->id] = true;
+                if (! isset($touched[$client->id])) {
+                    $touched[$client->id] = [
+                        'was_new' => $existing === null,
+                        'before'  => $fingerprintBefore,
+                    ];
+                }
             }
         });
 
-        foreach (array_keys($touchedIds) as $clientId) {
-            $client = Client::with('certificateCategories')->find($clientId);
-            if ($client) {
-                $this->qrService->ensureAllFor($client);
+        foreach ($touched as $clientId => $info) {
+            $client = Client::with('certificateCategories', 'customValues.field')->find($clientId);
+            if (! $client) continue;
+
+            $this->qrService->ensureAllFor($client);
+            $client->load('certificateCategories', 'customValues.field');
+
+            if ($info['was_new']) {
+                $stats['pdfs_generated'] += $this->pdfStore->regenerateAll($client);
+                continue;
+            }
+
+            $fingerprintAfter = $this->fingerprint($client);
+            if ($fingerprintAfter !== $info['before']) {
+                $this->pdfStore->invalidate($client);
+                $stats['pdfs_regenerated'] += $this->pdfStore->regenerateAll($client);
             }
         }
 
         return $stats;
+    }
+
+    private function findExisting(array $data, int $organizationId): ?Client
+    {
+        if (empty($data['external_id'])) return null;
+        return Client::with('certificateCategories', 'customValues')
+            ->where('organization_id', $organizationId)
+            ->where('external_id', (string) $data['external_id'])
+            ->first();
+    }
+
+    /**
+     * Stable hash of every field that affects the rendered PDF. If this changes
+     * between two imports of the same client, the cached PDF is invalidated.
+     */
+    private function fingerprint(Client $client): string
+    {
+        $client->loadMissing('certificateCategories', 'customValues');
+
+        $payload = [
+            'name'        => $client->name,
+            'lastname'    => $client->lastname,
+            'email'       => $client->email,
+            'url_slug'    => $client->url_slug,
+            'external_id' => $client->external_id,
+            'categories'  => $client->certificateCategories->pluck('id')->sort()->values()->all(),
+            'custom'      => $client->customValues
+                ->sortBy('custom_field_id')
+                ->map(fn ($v) => [(int) $v->custom_field_id, (string) $v->value])
+                ->values()
+                ->all(),
+        ];
+
+        return md5(json_encode($payload, JSON_UNESCAPED_UNICODE));
     }
 
     private function loadSheet(string $path, ?string $extension)
@@ -185,7 +242,7 @@ class ClientExcelImporter
         return ! $hasAny;
     }
 
-    private function upsertClient(array $data, int $organizationId, array &$stats): Client
+    private function upsertClient(array $data, int $organizationId, array &$stats, ?Client $existing = null): Client
     {
         $payload = [
             'name'     => $data['name']     ?? null,
@@ -196,13 +253,6 @@ class ClientExcelImporter
         ];
 
         $payload = array_filter($payload, fn ($v) => $v !== null);
-
-        $existing = null;
-        if (! empty($data['external_id'])) {
-            $existing = Client::where('organization_id', $organizationId)
-                ->where('external_id', (string) $data['external_id'])
-                ->first();
-        }
 
         if ($existing) {
             $existing->update($payload);

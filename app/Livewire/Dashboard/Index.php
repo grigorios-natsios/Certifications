@@ -49,9 +49,20 @@ class Index extends Component
         }
 
         $this->importFile = null;
+
+        $parts = [
+            "Νέοι: {$stats['inserted']}",
+            "Ενημερώθηκαν: {$stats['updated']}",
+            "Παραλείφθηκαν: {$stats['skipped']}",
+        ];
+        $pdfsGenerated   = $stats['pdfs_generated']   ?? 0;
+        $pdfsRegenerated = $stats['pdfs_regenerated'] ?? 0;
+        if ($pdfsGenerated)   $parts[] = "PDF νέα: {$pdfsGenerated}";
+        if ($pdfsRegenerated) $parts[] = "PDF ανανεωμένα: {$pdfsRegenerated}";
+
         $this->dispatch(
             'toast',
-            message: "Νέοι: {$stats['inserted']}, Ενημερώθηκαν: {$stats['updated']}, Παραλείφθηκαν: {$stats['skipped']}",
+            message: implode(', ', $parts),
             type: 'success'
         );
     }

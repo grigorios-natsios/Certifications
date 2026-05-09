@@ -102,6 +102,29 @@ class CertificatePdfRenderer
         return $base.'.pdf';
     }
 
+    /**
+     * Uppercase a string and strip diacritics (Greek tonos, dialytika, etc.).
+     * Used for {{name}}, {{lastname}}, {{full_name}} so certificates always
+     * read e.g. "ΓΙΩΡΓΟΣ ΠΑΠΑΔΟΠΟΥΛΟΣ" regardless of how data was stored.
+     */
+    private function upperNoAccents(string $s): string
+    {
+        if ($s === '') return $s;
+
+        $upper = mb_strtoupper($s, 'UTF-8');
+
+        if (class_exists(\Transliterator::class)) {
+            $t = \Transliterator::create('NFD; [:Nonspacing Mark:] Remove; NFC');
+            if ($t) return $t->transliterate($upper);
+        }
+
+        return strtr($upper, [
+            'Ά' => 'Α', 'Έ' => 'Ε', 'Ή' => 'Η', 'Ί' => 'Ι',
+            'Ό' => 'Ο', 'Ύ' => 'Υ', 'Ώ' => 'Ω',
+            'Ϊ' => 'Ι', 'Ϋ' => 'Υ',
+        ]);
+    }
+
     public function fillTemplate(string $html, Client $client, CertificateCategory $category): string
     {
         $fullName = trim(($client->lastname ?? '').' '.($client->name ?? ''));
@@ -131,9 +154,9 @@ class CertificatePdfRenderer
             : '';
 
         $replacements = [
-            '{{full_name}}'   => e($fullName),
-            '{{name}}'        => e($client->name ?? ''),
-            '{{lastname}}'    => e($client->lastname ?? ''),
+            '{{full_name}}'   => e($this->upperNoAccents($fullName)),
+            '{{name}}'        => e($this->upperNoAccents($client->name ?? '')),
+            '{{lastname}}'    => e($this->upperNoAccents($client->lastname ?? '')),
             '{{email}}'       => e($client->email ?? ''),
             '{{url_slug}}'    => e($client->url_slug ?? ''),
             '{{external_id}}' => e($client->external_id ?? ''),

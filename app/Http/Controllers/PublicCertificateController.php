@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CertificateCategory;
 use App\Models\Client;
 use App\Services\CertificatePdfRenderer;
+use App\Services\CertificatePdfStore;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -32,25 +32,32 @@ class PublicCertificateController extends Controller
         ]);
     }
 
-    public function pdf(string $slug, ?string $categorySlug, CertificatePdfRenderer $renderer): Response
+    public function pdf(string $slug, ?string $categorySlug, CertificatePdfStore $store, CertificatePdfRenderer $renderer): Response
     {
         [$client, $category] = $this->resolveClientAndCategory($slug, $categorySlug);
 
-        return $renderer->render($client, $category)
-            ->stream($renderer->filename($client, $category), ['Attachment' => false]);
+        $path = $store->ensure($client, $category);
+
+        return response()->file($path, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$renderer->filename($client, $category).'"',
+        ]);
     }
 
-    public function download(string $slug, ?string $categorySlug, CertificatePdfRenderer $renderer): Response
+    public function download(string $slug, ?string $categorySlug, CertificatePdfStore $store, CertificatePdfRenderer $renderer): Response
     {
         [$client, $category] = $this->resolveClientAndCategory($slug, $categorySlug);
 
-        return $renderer->render($client, $category)
-            ->download($renderer->filename($client, $category));
+        $path = $store->ensure($client, $category);
+
+        return response()->download($path, $renderer->filename($client, $category), [
+            'Content-Type' => 'application/pdf',
+        ]);
     }
 
     private function resolveClient(string $slug): Client
     {
-        return Client::with('certificateCategories', 'customValues.field')
+        return Client::with('certificateCategories', 'customValues.field', 'certificatePdfs')
             ->where('url_slug', $slug)
             ->firstOrFail();
     }

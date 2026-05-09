@@ -6,6 +6,7 @@ use App\Models\CertificateCategory;
 use App\Models\Client;
 use App\Models\ClientCustomField;
 use App\Models\ClientCustomValue;
+use App\Services\CertificatePdfStore;
 use App\Services\QrCodeService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -56,9 +57,12 @@ class Edit extends Component
         ];
     }
 
-    public function save(QrCodeService $qrService)
+    public function save(QrCodeService $qrService, CertificatePdfStore $pdfStore)
     {
         $this->validate();
+
+        $this->client->load('certificateCategories');
+        $previousCategories = $this->client->certificateCategories;
 
         $this->client->update([
             'name'        => $this->name,
@@ -78,7 +82,15 @@ class Edit extends Component
             );
         }
 
-        $qrService->ensureAllFor($this->client->fresh('certificateCategories'));
+        $fresh = $this->client->fresh('certificateCategories');
+        $qrService->ensureAllFor($fresh);
+
+        // Drop cached PDFs for both the previous and current category sets — manual
+        // edits may have changed any rendered field, so the next view regenerates.
+        foreach ($previousCategories as $cat) {
+            $pdfStore->invalidate($this->client, $cat);
+        }
+        $pdfStore->invalidate($fresh);
 
         session()->flash('toast', ['type' => 'success', 'message' => 'Ο πελάτης ενημερώθηκε.']);
         return redirect()->route('clients.index');

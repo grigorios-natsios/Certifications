@@ -7,6 +7,7 @@ use App\Models\CertificateCategory;
 use App\Models\Client;
 use App\Models\ClientCustomField;
 use App\Services\CertificatePdfRenderer;
+use App\Services\CertificatePdfStore;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -25,6 +26,8 @@ class Index extends Component
     #[Url(as: 'q')] public string $search = '';
     #[Url] public ?int $categoryFilter = null;
     #[Url] public string $hasUrl = '';   // '' | 'yes' | 'no'
+    #[Url(as: 'from')] public ?string $createdFrom = null;
+    #[Url(as: 'to')]   public ?string $createdTo   = null;
     #[Url] public array $activeCustomFilters = [];
     public array $customFilters = [];
 
@@ -36,6 +39,7 @@ class Index extends Component
     public bool $selectAll = false;
 
     public ?int $confirmingDeleteId = null;
+    public bool $confirmingBulkDelete = false;
 
     public function confirmDelete(int $id): void
     {
@@ -45,6 +49,20 @@ class Index extends Component
     public function cancelDelete(): void
     {
         $this->confirmingDeleteId = null;
+    }
+
+    public function confirmBulkDelete(): void
+    {
+        if (empty($this->selected)) {
+            $this->dispatch('toast', message: 'Δεν επιλέχθηκαν πελάτες.', type: 'warning');
+            return;
+        }
+        $this->confirmingBulkDelete = true;
+    }
+
+    public function cancelBulkDelete(): void
+    {
+        $this->confirmingBulkDelete = false;
     }
 
     public function isColumnVisible(string $key): bool
@@ -67,6 +85,15 @@ class Index extends Component
     public function updatedSearch() { $this->resetPage(); }
     public function updatedCategoryFilter() { $this->resetPage(); }
     public function updatedHasUrl() { $this->resetPage(); }
+    public function updatedCreatedFrom() { $this->resetPage(); }
+    public function updatedCreatedTo()   { $this->resetPage(); }
+
+    public function clearDateRange(): void
+    {
+        $this->createdFrom = null;
+        $this->createdTo   = null;
+        $this->resetPage();
+    }
     public function updatedCustomFilters() { $this->resetPage(); }
 
     public function addCustomFilter(int $fieldId): void
@@ -90,6 +117,8 @@ class Index extends Component
         $this->search = '';
         $this->categoryFilter = null;
         $this->hasUrl = '';
+        $this->createdFrom = null;
+        $this->createdTo   = null;
         $this->customFilters = [];
         $this->activeCustomFilters = [];
         $this->resetPage();
@@ -101,6 +130,8 @@ class Index extends Component
         if ($this->search !== '')        $count++;
         if ($this->categoryFilter)       $count++;
         if ($this->hasUrl !== '')        $count++;
+        if ($this->createdFrom)          $count++;
+        if ($this->createdTo)            $count++;
         foreach ($this->activeCustomFilters as $fieldId) {
             if (! empty($this->customFilters[$fieldId] ?? '')) $count++;
         }
@@ -144,6 +175,13 @@ class Index extends Component
             $query->where(fn ($q) => $q->whereNull('url_slug')->orWhere('url_slug', ''));
         }
 
+        if ($this->createdFrom) {
+            $query->whereDate('created_at', '>=', $this->createdFrom);
+        }
+        if ($this->createdTo) {
+            $query->whereDate('created_at', '<=', $this->createdTo);
+        }
+
         foreach ($this->activeCustomFilters as $fieldId) {
             $value = $this->customFilters[$fieldId] ?? '';
             if ($value === '') continue;
@@ -156,11 +194,45 @@ class Index extends Component
         return $query->orderByDesc('id');
     }
 
-    public function delete(int $id): void
+    public function delete(int $id, CertificatePdfStore $pdfStore): void
     {
-        Client::where('organization_id', Auth::user()->organization_id)->findOrFail($id)->delete();
+        $client = Client::with('certificateCategories')
+            ->where('organization_id', Auth::user()->organization_id)
+            ->findOrFail($id);
+        $pdfStore->invalidate($client);
+        $client->delete();
+
         $this->confirmingDeleteId = null;
         $this->dispatch('toast', message: 'Ο πελάτης διαγράφηκε.', type: 'success');
+    }
+
+    public function bulkDelete(CertificatePdfStore $pdfStore): void
+    {
+        if (empty($this->selected)) {
+            $this->confirmingBulkDelete = false;
+            return;
+        }
+
+        $clients = Client::with('certificateCategories')
+            ->where('organization_id', Auth::user()->organization_id)
+            ->whereIn('id', $this->selected)
+            ->get();
+
+        $count = 0;
+        foreach ($clients as $client) {
+            $pdfStore->invalidate($client); // delete cached PDF files
+            $client->delete();              // FK cascade handles DB rows
+            $count++;
+        }
+
+        $this->selected = [];
+        $this->selectAll = false;
+        $this->confirmingBulkDelete = false;
+
+        $this->dispatch('toast',
+            message: $count === 1 ? 'Ο πελάτης διαγράφηκε.' : "Διαγράφηκαν $count πελάτες.",
+            type: 'success'
+        );
     }
 
     public function generatePdfs(CertificatePdfRenderer $renderer): void
@@ -196,6 +268,65 @@ class Index extends Component
             message: "Δημιουργήθηκαν $count πιστοποιητικά.",
             type: 'success'
         );
+    }
+
+    public function downloadPdfs(CertificatePdfRenderer $renderer, CertificatePdfStore $store)
+    {
+        if (empty($this->selected)) {
+            $this->dispatch('toast', message: 'Δεν επιλέχθηκαν πελάτες.', type: 'warning');
+            return null;
+        }
+
+        $clients = Client::with('certificateCategories', 'customValues.field')
+            ->where('organization_id', Auth::user()->organization_id)
+            ->whereIn('id', $this->selected)
+            ->get();
+
+        $zipPath = tempnam(sys_get_temp_dir(), 'certs_');
+        $zip = new \ZipArchive();
+        if ($zip->open($zipPath, \ZipArchive::OVERWRITE) !== true) {
+            @unlink($zipPath);
+            $this->dispatch('toast', message: 'Σφάλμα δημιουργίας ZIP.', type: 'error');
+            return null;
+        }
+
+        // Use a name set to disambiguate identical human-readable filenames
+        // across different client+category combinations.
+        $usedNames = [];
+        $count = 0;
+        foreach ($clients as $client) {
+            foreach ($client->certificateCategories as $category) {
+                if (! $category->html_template) continue;
+                $pdfPath = $store->ensure($client, $category);
+                $name = $renderer->filename($client, $category);
+                if (isset($usedNames[$name])) {
+                    $name = pathinfo($name, PATHINFO_FILENAME).' ('.(++$usedNames[$name]).').pdf';
+                } else {
+                    $usedNames[$name] = 1;
+                }
+                $zip->addFile($pdfPath, $name);
+                $count++;
+            }
+        }
+        $zip->close();
+
+        if ($count === 0) {
+            @unlink($zipPath);
+            $this->dispatch('toast', message: 'Δεν υπάρχουν πιστοποιητικά για τους επιλεγμένους πελάτες.', type: 'warning');
+            return null;
+        }
+
+        $this->selected = [];
+        $this->selectAll = false;
+
+        $filename = 'pistopoiitika-'.date('Y-m-d_His').'.zip';
+
+        return response()->streamDownload(function () use ($zipPath) {
+            readfile($zipPath);
+            @unlink($zipPath);
+        }, $filename, [
+            'Content-Type' => 'application/zip',
+        ]);
     }
 
     public function sendEmails(): void

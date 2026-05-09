@@ -64,6 +64,14 @@
             </div>
         @endif
 
+        @php
+            $pdfRecord  = $client->certificatePdfs->firstWhere('category_id', $selected->id);
+            $pdfUrl     = $pdfRecord?->public_url
+                ?? route('certificate.pdf', ['slug' => $client->url_slug, 'category' => $selected->slug]);
+            $downloadUrl = route('certificate.download', ['slug' => $client->url_slug, 'category' => $selected->slug]);
+            $issuedAt   = $pdfRecord?->generated_at?->format('d/m/Y') ?? now()->format('d/m/Y');
+        @endphp
+
         <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div class="px-4 sm:px-5 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-white">
                 <div class="flex items-center gap-3 min-w-0">
@@ -73,7 +81,7 @@
                     <div class="min-w-0">
                         <p class="font-semibold text-slate-900 truncate text-sm">{{ $selected->name }}</p>
                         <p class="text-[11px] text-slate-500 truncate">
-                            {{ __('Έκδοση') }}: {{ now()->format('d/m/Y') }}
+                            {{ __('Έκδοση') }}: {{ $issuedAt }}
                             @if($client->external_id)
                                 · {{ __('Κωδικός') }}: <span class="font-mono">{{ $client->external_id }}</span>
                             @endif
@@ -81,14 +89,14 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
-                    <a href="{{ route('certificate.pdf', ['slug' => $client->url_slug, 'category' => $selected->slug]) }}"
+                    <a href="{{ $pdfUrl }}"
                        target="_blank" rel="noopener"
                        class="btn-secondary text-xs py-1.5"
                        title="{{ __('Άνοιγμα σε νέα καρτέλα') }}">
                         <i class="fas fa-arrow-up-right-from-square"></i>
                         <span class="hidden sm:inline">{{ __('Νέα καρτέλα') }}</span>
                     </a>
-                    <a href="{{ route('certificate.download', ['slug' => $client->url_slug, 'category' => $selected->slug]) }}"
+                    <a href="{{ $downloadUrl }}"
                        class="btn-primary text-xs py-1.5">
                         <i class="fas fa-download"></i>
                         {{ __('Λήψη PDF') }}
@@ -98,7 +106,7 @@
 
             <div class="bg-slate-100">
                 <iframe
-                    src="{{ route('certificate.pdf', ['slug' => $client->url_slug, 'category' => $selected->slug]) }}#toolbar=0&navpanes=0&view=FitH"
+                    src="{{ $pdfUrl }}#toolbar=0&navpanes=0&view=FitH"
                     class="w-full bg-white block"
                     style="height: 82vh; min-height: 640px; border: 0;"
                     title="{{ __('Πιστοποιητικό') }} — {{ $selected->name }}"

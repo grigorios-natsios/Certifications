@@ -1,4 +1,19 @@
 <div>
+    @php
+        // Stable color per category (keyed by id) so the same category
+        // always shows in the same color across rows. Tailwind needs to
+        // see the literal class names, so we list them explicitly.
+        $catPalette = [
+            ['bg' => 'bg-sky-50',     'fg' => 'text-sky-700',     'border' => 'border-sky-200',     'dot' => 'bg-sky-500',     'hover' => 'hover:bg-sky-100'],
+            ['bg' => 'bg-amber-50',   'fg' => 'text-amber-700',   'border' => 'border-amber-200',   'dot' => 'bg-amber-500',   'hover' => 'hover:bg-amber-100'],
+            ['bg' => 'bg-emerald-50', 'fg' => 'text-emerald-700', 'border' => 'border-emerald-200', 'dot' => 'bg-emerald-500', 'hover' => 'hover:bg-emerald-100'],
+            ['bg' => 'bg-violet-50',  'fg' => 'text-violet-700',  'border' => 'border-violet-200',  'dot' => 'bg-violet-500',  'hover' => 'hover:bg-violet-100'],
+            ['bg' => 'bg-rose-50',    'fg' => 'text-rose-700',    'border' => 'border-rose-200',    'dot' => 'bg-rose-500',    'hover' => 'hover:bg-rose-100'],
+            ['bg' => 'bg-teal-50',    'fg' => 'text-teal-700',    'border' => 'border-teal-200',    'dot' => 'bg-teal-500',    'hover' => 'hover:bg-teal-100'],
+        ];
+        $catColor = fn ($id) => $catPalette[$id % count($catPalette)];
+    @endphp
+
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -69,20 +84,36 @@
 
                         <button type="button" wire:click="generatePdfs" class="btn-secondary"
                                 @if(empty($selected)) disabled @endif
-                                wire:loading.attr="disabled" wire:target="generatePdfs,sendEmails">
+                                wire:loading.attr="disabled" wire:target="generatePdfs,sendEmails,downloadPdfs">
                             <i class="fas fa-file-pdf text-xs" wire:loading.remove wire:target="generatePdfs"></i>
                             <i class="fas fa-circle-notch fa-spin text-xs" wire:loading wire:target="generatePdfs"></i>
                             <span wire:loading.remove wire:target="generatePdfs">{{ __('Παραγωγή PDF') }}</span>
                             <span wire:loading wire:target="generatePdfs">{{ __('Δημιουργία...') }}</span>
                         </button>
 
+                        <button type="button" wire:click="downloadPdfs" class="btn-secondary"
+                                @if(empty($selected)) disabled @endif
+                                wire:loading.attr="disabled" wire:target="downloadPdfs,generatePdfs,sendEmails">
+                            <i class="fas fa-file-zipper text-xs" wire:loading.remove wire:target="downloadPdfs"></i>
+                            <i class="fas fa-circle-notch fa-spin text-xs" wire:loading wire:target="downloadPdfs"></i>
+                            <span wire:loading.remove wire:target="downloadPdfs">{{ __('Λήψη PDF (ZIP)') }}</span>
+                            <span wire:loading wire:target="downloadPdfs">{{ __('Συμπίεση...') }}</span>
+                        </button>
+
                         <button type="button" wire:click="sendEmails" class="btn-secondary"
                                 @if(empty($selected)) disabled @endif
-                                wire:loading.attr="disabled" wire:target="sendEmails,generatePdfs">
+                                wire:loading.attr="disabled" wire:target="sendEmails,generatePdfs,downloadPdfs">
                             <i class="fas fa-paper-plane text-xs" wire:loading.remove wire:target="sendEmails"></i>
                             <i class="fas fa-circle-notch fa-spin text-xs" wire:loading wire:target="sendEmails"></i>
                             <span wire:loading.remove wire:target="sendEmails">{{ __('Αποστολή Email') }}</span>
                             <span wire:loading wire:target="sendEmails">{{ __('Αποστολή...') }}</span>
+                        </button>
+
+                        <button type="button" wire:click="confirmBulkDelete"
+                                @if(empty($selected)) disabled @endif
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-rose-200 bg-white text-rose-600 hover:bg-rose-50 hover:border-rose-300 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i class="fas fa-trash text-xs"></i>
+                            <span>{{ __('Διαγραφή') }}</span>
                         </button>
                     </div>
                 </div>
@@ -110,6 +141,21 @@
                                     <option value="{{ $cat->id }}">{{ $cat->name }}</option>
                                 @endforeach
                             </select>
+
+                            <div class="inline-flex items-stretch border border-slate-200 rounded-md bg-white overflow-hidden text-sm" title="{{ __('Ημερομηνία δημιουργίας — εύρος') }}">
+                                <span class="px-2.5 py-1.5 bg-slate-50 text-xs text-slate-500 border-r border-slate-200 flex items-center whitespace-nowrap">
+                                    <i class="fas fa-calendar-days text-[10px] mr-1.5"></i>{{ __('Από') }}
+                                </span>
+                                <input type="date" wire:model.live="createdFrom" class="border-0 text-sm py-1 px-2 focus:ring-0 focus:border-0 w-[140px]">
+                                <span class="px-2 py-1.5 bg-slate-50 text-xs text-slate-500 border-x border-slate-200 flex items-center">{{ __('έως') }}</span>
+                                <input type="date" wire:model.live="createdTo" class="border-0 text-sm py-1 px-2 focus:ring-0 focus:border-0 w-[140px]">
+                                @if($createdFrom || $createdTo)
+                                    <button type="button" wire:click="clearDateRange"
+                                            class="px-2 text-slate-400 hover:text-rose-600 border-l border-slate-200" title="{{ __('Καθαρισμός') }}">
+                                        <i class="fas fa-xmark text-xs"></i>
+                                    </button>
+                                @endif
+                            </div>
 
                             <div class="relative" x-data="{ open: false }" @click.outside="open = false">
                                 <button type="button" @click="open = ! open" class="btn-secondary">
@@ -291,17 +337,19 @@
                                             @forelse($client->certificateCategories as $cat)
                                                 @php
                                                     $hasPdf = $cat->html_template && $client->url_slug;
+                                                    $c = $catColor($cat->id);
                                                 @endphp
                                                 @if($hasPdf)
                                                     <a href="{{ route('certificate.pdf', ['slug' => $client->url_slug, 'category' => $cat->slug]) }}"
                                                        target="_blank" rel="noopener"
-                                                       class="badge badge-emerald hover:bg-emerald-100 transition"
+                                                       class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs border transition {{ $c['bg'] }} {{ $c['fg'] }} {{ $c['border'] }} {{ $c['hover'] }}"
                                                        title="Άνοιγμα PDF — {{ $cat->name }}">
-                                                        <i class="fas fa-file-pdf text-[10px]"></i>
+                                                        <span class="w-1.5 h-1.5 rounded-full {{ $c['dot'] }}"></span>
                                                         {{ $cat->name }}
                                                     </a>
                                                 @else
-                                                    <span class="badge badge-slate" title="{{ $cat->html_template ? 'Λείπει URL slug' : 'Λείπει template' }}">
+                                                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs border bg-slate-50 text-slate-600 border-slate-200"
+                                                          title="{{ $cat->html_template ? 'Λείπει URL slug' : 'Λείπει template' }}">
                                                         <i class="fas fa-circle-exclamation text-[10px] text-amber-500"></i>
                                                         {{ $cat->name }}
                                                     </span>
@@ -358,10 +406,45 @@
         </div>
     </div>
 
+    @if($confirmingBulkDelete)
+        <div class="modal-backdrop" wire:key="bulk-delete-modal">
+            <div class="modal-panel" @click.stop>
+                <div class="modal-header">
+                    <h3 class="section-title text-rose-700">
+                        <i class="fas fa-triangle-exclamation mr-1.5"></i>
+                        {{ __('Διαγραφή πελατών') }}
+                    </h3>
+                    <button type="button" wire:click="cancelBulkDelete" class="text-slate-400 hover:text-slate-600"><i class="fas fa-xmark"></i></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-sm text-slate-700">
+                        {{ __('Σίγουρα θέλεις να διαγράψεις') }}
+                        <strong class="text-rose-700">{{ count($selected) }}</strong>
+                        {{ count($selected) === 1 ? __('πελάτη') : __('πελάτες') }};
+                    </p>
+                    <p class="text-xs text-slate-500 mt-2">
+                        {{ __('Διαγράφονται και τα cached PDFs, QR codes και custom values. Δεν υπάρχει undo.') }}
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" wire:click="cancelBulkDelete" class="btn-secondary">{{ __('Άκυρο') }}</button>
+                    <button type="button" wire:click="bulkDelete"
+                            wire:loading.attr="disabled" wire:target="bulkDelete"
+                            class="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium disabled:opacity-60">
+                        <i class="fas fa-trash text-xs" wire:loading.remove wire:target="bulkDelete"></i>
+                        <i class="fas fa-circle-notch fa-spin text-xs" wire:loading wire:target="bulkDelete"></i>
+                        <span wire:loading.remove wire:target="bulkDelete">{{ __('Διαγραφή') }}</span>
+                        <span wire:loading wire:target="bulkDelete">{{ __('Διαγραφή...') }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <x-confirm-delete-toast :targetId="$confirmingDeleteId"
                             message="Σίγουρα θέλεις να διαγράψεις αυτόν τον πελάτη; Τα στοιχεία του χάνονται οριστικά." />
 
-    <div wire:loading.flex wire:target="generatePdfs,sendEmails"
+    <div wire:loading.flex wire:target="generatePdfs,sendEmails,downloadPdfs"
          class="fixed inset-0 z-[65] bg-slate-900/40 backdrop-blur-[2px] items-center justify-center px-4"
          style="display: none;">
         <div class="bg-white rounded-lg shadow-2xl border border-brand-200 p-5 max-w-md w-full">
@@ -372,6 +455,7 @@
                 <div class="flex-1 min-w-0">
                     <p class="text-sm font-semibold text-slate-900">
                         <span wire:loading wire:target="generatePdfs">{{ __('Δημιουργία PDF σε εξέλιξη...') }}</span>
+                        <span wire:loading wire:target="downloadPdfs">{{ __('Συμπίεση PDF σε ZIP...') }}</span>
                         <span wire:loading wire:target="sendEmails">{{ __('Αποστολή email σε εξέλιξη...') }}</span>
                     </p>
                     <p class="text-sm text-slate-600 mt-1">

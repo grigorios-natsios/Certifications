@@ -16,6 +16,11 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             ClientCustomFieldSeeder::class,
             CertificateCategorySeeder::class,
+            KlarkTemplateSeeder::class,
+            TsitsisTemplateSeeder::class,
+            TsitsisEuroTemplateSeeder::class,
+            NaoumidouTemplateSeeder::class,
+            NaoumidouEuroTemplateSeeder::class,
         ]);
     }
 }

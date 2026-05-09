@@ -5,7 +5,7 @@ namespace Database\Seeders;
 use App\Models\CertificateCategory;
 use Illuminate\Database\Seeder;
 
-class KlarkTemplateSeeder extends Seeder
+class TsitsisEuroTemplateSeeder extends Seeder
 {
     public function run(): void
     {
@@ -56,16 +56,20 @@ class KlarkTemplateSeeder extends Seeder
     .content {
         position: relative;
         z-index: 1;
-        padding: 12mm 22mm 10mm;
+        padding: 12mm 22mm 8mm;
         text-align: center;
     }
 
-    .header { margin: 0 0 6mm; }
-    .header img { width: 166mm; height: 22mm; display: block; }
+    .header { width: 100%; margin: 0 0 6mm; }
+    .header td { vertical-align: middle; }
+    .header td.left  { text-align: left; }
+    .header td.right { text-align: right; }
+    .header img.eoppep { height: 18mm; }
+    .header img.abm    { height: 18mm; }
 
     .title {
         font-size: 56px; font-weight: 700; letter-spacing: 3px;
-        margin: 10mm 0 0; line-height: 1; color: #0f172a;
+        margin: 6mm 0 0; line-height: 1; color: #0f172a;
     }
     .title-divider {
         margin: 3mm auto 3mm;
@@ -83,7 +87,7 @@ class KlarkTemplateSeeder extends Seeder
     }
     .subtitle {
         font-size: 26px; font-weight: 500; letter-spacing: 5px;
-        margin: 0 0 13mm; color: #0f172a;
+        margin: 0 0 9mm; color: #0f172a;
     }
 
     .label {
@@ -91,41 +95,38 @@ class KlarkTemplateSeeder extends Seeder
         margin: 0 0 3mm; color: #1e293b;
     }
     .name {
-        font-size: 26px; font-weight: 700; letter-spacing: 4px;
-        margin: 0 0 9mm; color: #0f172a;
+        font-size: 24px; font-weight: 700; letter-spacing: 4px;
+        margin: 0 0 7mm; color: #0f172a;
     }
 
-    .about { font-size: 12px; margin: 0 0 5mm; color: #1e293b; }
+    .about { font-size: 12px; margin: 0 0 5mm; }
     .subject {
         font-size: 20px; font-weight: 700; line-height: 1.3;
-        margin: 0 8mm 9mm; color: #0f172a;
+        margin: 0 8mm 7mm; color: #0f172a;
     }
 
-    .duration { font-size: 12px; margin: 0 0 4mm; color: #1e293b; }
+    .duration { font-size: 12px; margin: 0 0 4mm; }
     .dates {
-        font-size: 21px; font-weight: 500; margin: 0 0 8mm; color: #0f172a;
+        font-size: 21px; font-weight: 500; margin: 0 0 3mm; color: #0f172a;
     }
-    .dates .dash { color: #0f172a; padding: 0 10px; font-weight: 700; }
+    .dates .dash { padding: 0 8px; font-weight: 700; }
 
-    .legal {
-        font-size: 10px; line-height: 1.5; text-align: justify;
-        margin: 0 4mm 7mm; color: #475569;
-    }
+    .eu-logos { margin: 6mm auto 6mm; }
+    .eu-logos img { width: 90mm; }
 
-    .qr { margin: 0 auto 4mm; }
+    .qr { margin: 3mm auto 3mm; }
 
-    .sig { margin-top: 2mm; }
-    .sig img { display: block; margin: 0 auto; width: 32mm; height: 14mm; }
+    .sig { margin-top: 1mm; }
+    .sig img { display: block; margin: 0 auto; width: 30mm; height: 12mm; }
     .sig-line {
-        width: 35mm; height: 2px;
-        background: #c9a449; margin: 1mm auto 2mm;
+        width: 38mm; height: 2px;
+        background: #c9a449; margin: 0 auto 1mm;
     }
     .sig-name { font-size: 12px; font-weight: 500; margin: 0; color: #0f172a; }
     .sig-role { font-size: 11px; margin: 0; color: #475569; }
 
-    .org-logo { margin-top: 4mm; }
-    .org-logo img { width: 44mm; height: 12mm; display: inline-block; }
-
+    .org-logo { margin-top: 3mm; }
+    .org-logo img { width: 36mm; }
     .kdbm { font-size: 10px; margin: 1mm 0 0; color: #1e293b; }
 </style>
 </head>
@@ -134,9 +135,12 @@ class KlarkTemplateSeeder extends Seeder
     <img class="bg" src="images/logos/background-cert.jpg" alt="">
 
     <div class="content">
-        <div class="header">
-            <img src="images/logos/eopp-ab-best.png" alt="">
-        </div>
+        <table class="header">
+            <tr>
+                <td class="left"><img class="eoppep" src="images/logos/eoppep.png" alt=""></td>
+                <td class="right"><img class="abm" src="images/logos/abm.png" alt=""></td>
+            </tr>
+        </table>
 
         <h1 class="title">ΒΕΒΑΙΩΣΗ</h1>
         <table class="title-divider"><tr>
@@ -147,15 +151,17 @@ class KlarkTemplateSeeder extends Seeder
         <h2 class="subtitle">ΠΑΡΑΚΟΛΟΥΘΗΣΗΣ</h2>
 
         <p class="label">ΒΕΒΑΙΩΝΕΤΑΙ ΟΤΙ Ο/Η</p>
-        <p class="name">{{lastname}} {{name}}</p>
+        <p class="name">{{full_name}}</p>
 
         <p class="about">παρακολούθησε επιτυχώς Πρόγραμμα Κατάρτισης με Αντικείμενο:</p>
-        <p class="subject">ΧΕΙΡΙΣΤΗΣ Μ.Ε. ΟΜΑΔΑΣ Β ΕΙΔΙΚΟΤΗΤΑΣ 2<br>(&gt;10KW &amp; ΕΩΣ 2.500kg)</p>
+        <p class="subject">{{field:Αντικείμενο Προγράμματος}}</p>
 
         <p class="duration">Το Πρόγραμμα είχε διάρκεια <b>{{field:Διάρκεια (ώρες)}}</b> ώρες και υλοποιήθηκε το διάστημα:</p>
-        <p class="dates">{{date}} <span class="dash">-</span> {{field:Περίοδος Λήξης}}</p>
+        <p class="dates">{{field:Περίοδος Έναρξης}} <span class="dash">-</span> {{field:Περίοδος Λήξης}}</p>
 
-        <p class="legal">Σύμφωνα με το ΦΕΚ 3350/Β/12-09-2024, ο κάτοχος Βεβαίωσης Παρακολούθησης Ειδικού Προγράμματος Κατάρτισης αποκτά δικαίωμα άσκησης ελεύθερης επαγγελματικής δραστηριότητας σε Μηχανήματα Έργου Ομάδας Β Ειδικότητας 2, τα οποία κατατάσσονται στις περ. 2.7 και 2.8 των άρθρων 2 και 3 της υπό στοιχεία Οικ.1032/166/Φ.Γ.9.6.4(Η)/5.3.2013 υπουργικής απόφασης (ήτοι &gt;10 KW και μέγιστης ανυψωτικής ικανότητας έως 2.500 kgr).</p>
+        <div class="eu-logos">
+            <img src="images/logos/ellada.png" alt="Ελλάδα 2.0 — Ευρωπαϊκή Ένωση NextGenerationEU">
+        </div>
 
         <div class="qr">{{qr}}</div>
 
@@ -167,7 +173,7 @@ class KlarkTemplateSeeder extends Seeder
         <p class="sig-role">Διευθυντής Κατάρτισης</p>
 
         <div class="org-logo">
-            <img src="images/logos/TSITSIS-LOGO.png" alt="">
+            <img src="images/logos/tsitsis.png" alt="">
         </div>
         <p class="kdbm">Α. Α. ΚΔΒΜ: 2101537</p>
     </div>
@@ -176,8 +182,8 @@ class KlarkTemplateSeeder extends Seeder
 </html>
 HTML;
 
-        CertificateCategory::where('slug', 'klark')->update(['html_template' => $html]);
+        CertificateCategory::where('slug', 'tsitsis-euro')->update(['html_template' => $html]);
 
-        $this->command->info('Klark template saved.');
+        $this->command->info('Tsitsis-Euro template saved.');
     }
 }

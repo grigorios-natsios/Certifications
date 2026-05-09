@@ -45,4 +45,9 @@ class Client extends Model
     {
         return $this->customValues()->where('custom_field_id', $fieldId)->first();
     }
+
+    public function certificatePdfs()
+    {
+        return $this->hasMany(ClientCertificatePdf::class);
+    }
 }
