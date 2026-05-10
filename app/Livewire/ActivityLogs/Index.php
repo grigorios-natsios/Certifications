@@ -1,14 +1,18 @@
 <?php
 
-namespace App\Livewire\Dashboard;
+namespace App\Livewire\ActivityLogs;
 
 use App\Models\ActivityLog as ActivityLogModel;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-class ActivityLog extends Component
+#[Layout('layouts.app')]
+#[Title('Καταγραφές')]
+class Index extends Component
 {
     use WithPagination;
 
@@ -64,7 +68,7 @@ class ActivityLog extends Component
 
     private function buildQuery()
     {
-        $query = ActivityLogModel::with('client')
+        $query = ActivityLogModel::with(['client', 'user'])
             ->where('organization_id', Auth::user()->organization_id);
 
         if ($this->search !== '') {
@@ -116,7 +120,7 @@ class ActivityLog extends Component
             ->where('created_at', '<', $startOfYear)
             ->count();
 
-        return view('livewire.dashboard.activity-log', [
+        return view('livewire.activity-logs.index', [
             'logs'        => $this->buildQuery()->paginate(15),
             'actions'     => ActivityLogModel::ACTIONS,
             'totals'      => $totals,

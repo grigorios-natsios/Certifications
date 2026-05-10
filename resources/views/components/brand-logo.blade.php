@@ -5,7 +5,9 @@
 @endphp
 
 @if($url)
-    <img src="{{ $url }}" alt="{{ config('app.name', 'Logo') }}" class="{{ $class }}">
+    <img src="{{ $url }}" alt="{{ config('app.name', 'Logo') }}" class="{{ $class }}"
+         style="image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;"
+         decoding="async">
 @else
     <span class="w-9 h-9 rounded-md bg-brand-600 text-white flex items-center justify-center">
         <i class="fas fa-certificate"></i>

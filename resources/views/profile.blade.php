@@ -25,6 +25,16 @@
                 </div>
             </div>
 
+            <div class="card p-6 sm:p-8">
+                <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
+                    <span class="w-10 h-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center"><i class="fas fa-shield-halved"></i></span>
+                    <h2 class="text-lg font-semibold text-slate-800">{{ __('Επαλήθευση Δύο Βημάτων') }}</h2>
+                </div>
+                <div class="max-w-xl">
+                    <livewire:profile.two-factor-authentication-form />
+                </div>
+            </div>
+
             <div class="card p-6 sm:p-8 border-rose-200">
                 <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
                     <span class="w-10 h-10 rounded-lg bg-rose-600 text-white flex items-center justify-center"><i class="fas fa-triangle-exclamation"></i></span>
@@ -34,6 +44,18 @@
                     <livewire:profile.delete-user-form />
                 </div>
             </div>
+
+            @if(auth()->user()->role === 'admin')
+                <div class="card p-6 sm:p-8 border-rose-200">
+                    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
+                        <span class="w-10 h-10 rounded-lg bg-rose-600 text-white flex items-center justify-center"><i class="fas fa-building-circle-xmark"></i></span>
+                        <h2 class="text-lg font-semibold text-rose-700">{{ __('Διαγραφή Οργανισμού') }}</h2>
+                    </div>
+                    <div class="max-w-xl">
+                        <livewire:profile.delete-organization-form />
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
 </x-app-layout>

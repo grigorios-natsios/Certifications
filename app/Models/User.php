@@ -24,7 +24,9 @@ class User extends Authenticatable
         'password',
         'role',
         'organization_id',
-        
+        'is_active',
+        'two_factor_secret',
+        'two_factor_confirmed_at',
     ];
 
     /**
@@ -36,6 +38,7 @@ class User extends Authenticatable
         'password',
         'remember_token',
         'role' => UserRole::class,
+        'two_factor_secret',
     ];
 
     /**
@@ -48,7 +51,15 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
+            'two_factor_secret' => 'encrypted',
+            'two_factor_confirmed_at' => 'datetime',
         ];
+    }
+
+    public function hasTwoFactorEnabled(): bool
+    {
+        return ! is_null($this->two_factor_confirmed_at) && ! is_null($this->two_factor_secret);
     }
 
     public function organization()

@@ -18,6 +18,11 @@ class Create extends Component
     public string $password = '';
     public string $password_confirmation = '';
 
+    public function mount(): void
+    {
+        abort_if(Auth::user()->role !== 'admin', 403);
+    }
+
     protected function rules(): array
     {
         return [

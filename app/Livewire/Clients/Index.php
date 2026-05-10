@@ -203,7 +203,7 @@ class Index extends Component
         $client = Client::with('certificateCategories')
             ->where('organization_id', Auth::user()->organization_id)
             ->findOrFail($id);
-        $pdfStore->invalidate($client);
+        $pdfStore->pruneAllForClient($client);
         $client->delete();
 
         $this->confirmingDeleteId = null;
@@ -224,8 +224,8 @@ class Index extends Component
 
         $count = 0;
         foreach ($clients as $client) {
-            $pdfStore->invalidate($client); // delete cached PDF files
-            $client->delete();              // FK cascade handles DB rows
+            $pdfStore->pruneAllForClient($client); // delete cached + bulk PDF files
+            $client->delete();                     // FK cascade handles DB rows
             $count++;
         }
 
@@ -239,7 +239,7 @@ class Index extends Component
         );
     }
 
-    public function generatePdfs(CertificatePdfRenderer $renderer): void
+    public function generatePdfs(CertificatePdfStore $pdfStore): void
     {
         if (empty($this->selected)) {
             $this->dispatch('toast', message: 'Δεν επιλέχθηκαν πελάτες.', type: 'warning');
@@ -251,16 +251,12 @@ class Index extends Component
             ->whereIn('id', $this->selected)
             ->get();
 
-        $dir = storage_path('app/public/pdfs');
-        if (! is_dir($dir)) mkdir($dir, 0777, true);
-
         $count = 0;
         foreach ($clients as $client) {
             foreach ($client->certificateCategories as $category) {
-                if (! $category->html_template) continue;
-                $renderer->render($client, $category)
-                    ->save($dir.'/'.$renderer->filename($client, $category));
-                $count++;
+                if ($pdfStore->generateBulk($client, $category) !== null) {
+                    $count++;
+                }
             }
         }
 
@@ -345,7 +341,15 @@ class Index extends Component
             ->whereIn('id', $this->selected)
             ->get();
 
-        $reportRecipient = config('mail.bulk_report_recipient', 'info@lianaoumidou.gr');
+        $reportRecipient = Auth::user()->organization?->email ?: Auth::user()->email;
+
+        if (! $reportRecipient) {
+            $this->dispatch('toast',
+                message: 'Δεν βρέθηκε email οργανισμού για την αναφορά μαζικής αποστολής.',
+                type: 'error'
+            );
+            return;
+        }
 
         $jobs = [];
         $skipped = 0;
@@ -379,7 +383,8 @@ class Index extends Component
             ->allowFailures()
             ->finally(function (Batch $batch) use ($reportRecipient) {
                 try {
-                    Mail::to($reportRecipient)->send(new BulkEmailReportMail($batch->id));
+                    Mail::to($reportRecipient)
+                        ->later(now()->addSeconds(20), new BulkEmailReportMail($batch->id));
                 } catch (\Throwable $e) {
                     Log::error('Bulk email report send failed', [
                         'batch_id' => $batch->id,
@@ -391,6 +396,7 @@ class Index extends Component
 
         ActivityLog::record(ActivityLog::ACTION_EMAIL_BATCH, [
             'organization_id' => Auth::user()->organization_id,
+            'user_id'         => Auth::id(),
             'subject'         => "$queued emails — αναφορά στο $reportRecipient",
             'meta'            => [
                 'batch_id'         => $batch->id,
@@ -418,10 +424,18 @@ class Index extends Component
     {
         $organizationId = Auth::user()->organization_id;
 
+        $lastExternalId = Client::where('organization_id', $organizationId)
+            ->whereNotNull('external_id')
+            ->where('external_id', '!=', '')
+            ->orderByDesc('id')
+            ->value('external_id');
+
         return view('livewire.clients.index', [
-            'clients'      => $this->buildQuery()->paginate(15),
-            'categories'   => CertificateCategory::orderBy('name')->get(),
-            'customFields' => ClientCustomField::where('organization_id', $organizationId)->get(),
+            'clients'        => $this->buildQuery()->paginate(15),
+            'categories'     => CertificateCategory::where('organization_id', $organizationId)
+                ->orderBy('name')->get(),
+            'customFields'   => ClientCustomField::where('organization_id', $organizationId)->get(),
+            'lastExternalId' => $lastExternalId,
         ]);
     }
 }

@@ -2,12 +2,14 @@
 
 namespace App\Livewire\Clients;
 
+use App\Jobs\GenerateClientPdfs;
 use App\Models\CertificateCategory;
 use App\Models\Client;
 use App\Models\ClientCustomField;
 use App\Models\ClientCustomValue;
 use App\Services\QrCodeService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -33,7 +35,10 @@ class Create extends Component
             'urlSlug'   => 'nullable|string|max:255',
             'externalId'=> 'nullable|string|max:255',
             'selectedCategories'   => 'array',
-            'selectedCategories.*' => 'exists:certificate_categories,id',
+            'selectedCategories.*' => [
+                Rule::exists('certificate_categories', 'id')
+                    ->where('organization_id', Auth::user()->organization_id),
+            ],
         ];
     }
 
@@ -69,6 +74,8 @@ class Create extends Component
 
         $qrService->ensureAllFor($client->fresh('certificateCategories'));
 
+        GenerateClientPdfs::dispatch($client->id, invalidateFirst: false);
+
         session()->flash('toast', ['type' => 'success', 'message' => 'Ο πελάτης δημιουργήθηκε.']);
         return redirect()->route('clients.index');
     }
@@ -76,7 +83,8 @@ class Create extends Component
     public function render()
     {
         return view('livewire.clients.create', [
-            'categories'   => CertificateCategory::orderBy('name')->get(),
+            'categories'   => CertificateCategory::where('organization_id', Auth::user()->organization_id)
+                ->orderBy('name')->get(),
             'customFields' => ClientCustomField::where('organization_id', Auth::user()->organization_id)
                 ->orderBy('name')->get(),
         ]);

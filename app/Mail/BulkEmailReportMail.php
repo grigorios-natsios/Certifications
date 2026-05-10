@@ -4,12 +4,16 @@ namespace App\Mail;
 
 use App\Models\BulkEmailResult;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class BulkEmailReportMail extends Mailable
+class BulkEmailReportMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
+
+    public int $tries = 5;
+    public array $backoff = [30, 60, 120, 300, 600];
 
     public string $batchId;
     public int $sentCount;

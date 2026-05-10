@@ -23,6 +23,7 @@ class Edit extends Component
 
     public function mount(User $user): void
     {
+        abort_if(Auth::user()->role !== 'admin', 403);
         abort_if($user->organization_id !== Auth::user()->organization_id, 403);
 
         $this->user  = $user;

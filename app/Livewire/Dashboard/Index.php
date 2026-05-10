@@ -6,6 +6,7 @@ use App\Models\CertificateCategory;
 use App\Models\Client;
 use App\Services\ClientExcelImporter;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -69,16 +70,28 @@ class Index extends Component
     {
         $organizationId = Auth::user()->organization_id;
 
-        $categories = CertificateCategory::withCount(['clients' => fn ($q) => $q->where('organization_id', $organizationId)])
+        $categories = CertificateCategory::where('organization_id', $organizationId)
+            ->withCount(['clients' => fn ($q) => $q->where('organization_id', $organizationId)])
             ->orderBy('name')
             ->get();
 
         return view('livewire.dashboard.index', [
             'categories' => $categories,
             'stats'      => [
-                'total'     => Client::where('organization_id', $organizationId)->count(),
-                'this_year' => Client::where('organization_id', $organizationId)
-                                ->whereYear('created_at', now()->year)->count(),
+                'total'          => Client::where('organization_id', $organizationId)->count(),
+                'certifications' => DB::table('certificate_category_client')
+                                        ->join('clients', 'clients.id', '=', 'certificate_category_client.client_id')
+                                        ->where('clients.organization_id', $organizationId)
+                                        ->count(),
+                'pdfs_generated' => DB::table('client_certificate_pdfs')
+                                        ->join('clients', 'clients.id', '=', 'client_certificate_pdfs.client_id')
+                                        ->where('clients.organization_id', $organizationId)
+                                        ->count(),
+                'emails_sent'    => DB::table('bulk_email_results')
+                                        ->join('clients', 'clients.id', '=', 'bulk_email_results.client_id')
+                                        ->where('clients.organization_id', $organizationId)
+                                        ->where('bulk_email_results.status', 'sent')
+                                        ->count(),
             ],
         ]);
     }

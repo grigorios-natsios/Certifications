@@ -10,7 +10,8 @@ class ClientCustomFieldSeeder extends Seeder
 {
     public function run(): void
     {
-        $organization = Organization::firstOrCreate(['name' => 'Naoumidou']);
+        $organization = Organization::query()->orderBy('id')->first()
+            ?? Organization::create(['name' => 'Lia Naoumidou']);
 
         $defaults = [
             ['name' => 'Αντικείμενο Προγράμματος', 'type' => 'text',   'is_required' => false],

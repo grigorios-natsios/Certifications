@@ -59,7 +59,7 @@ class Index extends Component
 
     public function openEdit(int $id): void
     {
-        $cat = CertificateCategory::findOrFail($id);
+        $cat = $this->scoped()->findOrFail($id);
         $this->editingId = $cat->id;
         $this->name      = $cat->name;
         $this->showModal = true;
@@ -70,10 +70,13 @@ class Index extends Component
         $this->validate();
 
         if ($this->editingId) {
-            CertificateCategory::findOrFail($this->editingId)->update(['name' => $this->name]);
+            $this->scoped()->findOrFail($this->editingId)->update(['name' => $this->name]);
             $this->dispatch('toast', message: 'Η κατηγορία ενημερώθηκε.', type: 'success');
         } else {
-            $cat = CertificateCategory::create(['name' => $this->name]);
+            $cat = CertificateCategory::create([
+                'name'            => $this->name,
+                'organization_id' => Auth::user()->organization_id,
+            ]);
             $this->dispatch('toast', message: 'Η κατηγορία δημιουργήθηκε.', type: 'success');
             $this->editingId = $cat->id;
         }
@@ -83,9 +86,14 @@ class Index extends Component
 
     public function delete(int $id): void
     {
-        CertificateCategory::findOrFail($id)->delete();
+        $this->scoped()->findOrFail($id)->delete();
         $this->confirmingDeleteId = null;
         $this->dispatch('toast', message: 'Η κατηγορία διαγράφηκε.', type: 'success');
+    }
+
+    private function scoped()
+    {
+        return CertificateCategory::where('organization_id', Auth::user()->organization_id);
     }
 
     public function closeModal(): void
@@ -103,7 +111,7 @@ class Index extends Component
 
     public function openEditor(int $id): void
     {
-        $cat = CertificateCategory::findOrFail($id);
+        $cat = $this->scoped()->findOrFail($id);
         $this->editorCategoryId = $cat->id;
         $this->editorName       = $cat->name;
         $this->editorTemplate   = $cat->html_template ?? '';
@@ -114,7 +122,7 @@ class Index extends Component
     {
         if (! $this->editorCategoryId) return;
 
-        CertificateCategory::findOrFail($this->editorCategoryId)
+        $this->scoped()->findOrFail($this->editorCategoryId)
             ->update(['html_template' => $html]);
 
         $this->dispatch('toast', message: 'Το template αποθηκεύτηκε.', type: 'success');
@@ -131,7 +139,7 @@ class Index extends Component
 
     public function render()
     {
-        $query = CertificateCategory::orderByDesc('id');
+        $query = $this->scoped()->orderByDesc('id');
 
         if ($this->search !== '') {
             $query->where('name', 'like', '%'.$this->search.'%');

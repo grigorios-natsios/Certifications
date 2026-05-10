@@ -34,9 +34,13 @@ class GenerateClientPdfs implements ShouldQueue
         $client->load('certificateCategories', 'customValues.field');
 
         if ($this->invalidateFirst) {
-            $pdfStore->invalidate($client);
+            // Wipe + regen everything (cached + previously-bulk combos).
+            $pdfStore->refreshAllForClient($client);
+            return;
         }
 
+        // First-time generation (e.g. fresh import) — only cached, no bulk
+        // because the user hasn't asked for human-named files yet.
         $pdfStore->regenerateAll($client);
     }
 }

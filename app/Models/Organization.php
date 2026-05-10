@@ -11,7 +11,21 @@ class Organization extends Model
 {
    use HasFactory;
 
-    protected $fillable = ['name'];
+    protected $fillable = [
+        'name',
+        'address',
+        'phones',
+        'email',
+        'hours',
+        'website_url',
+        'facebook_url',
+        'instagram_url',
+        'youtube_url',
+    ];
+
+    protected $casts = [
+        'phones' => 'array',
+    ];
 
     public function users()
     {

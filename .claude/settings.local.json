@@ -10,7 +10,8 @@
       "Bash(curl -sSL -o Roboto-Bold.ttf \"https://github.com/google/fonts/raw/main/apache/roboto/static/Roboto-Bold.ttf\")",
       "Bash(curl -sSL -o Roboto-Medium.ttf \"https://github.com/google/fonts/raw/main/apache/roboto/static/Roboto-Medium.ttf\")",
       "Bash(curl -sSL -o Roboto-SemiBold.ttf \"https://github.com/google/fonts/raw/main/apache/roboto/static/Roboto-SemiBold.ttf\")",
-      "Bash(php -r ' *)"
+      "Bash(php -r ' *)",
+      "Bash(php artisan *)"
     ]
   }
 }

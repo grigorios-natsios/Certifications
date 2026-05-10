@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\PublicCertificateController;
+use App\Livewire\ActivityLogs;
 use App\Livewire\Categories;
 use App\Livewire\Clients;
 use App\Livewire\CustomFields;
@@ -26,6 +27,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/categories',            Categories\Index::class)->name('categories.index');
     Route::get('/custom-fields',         CustomFields\Index::class)->name('custom-fields.index');
+
+    Route::get('/activity-logs',         ActivityLogs\Index::class)->name('activity-logs.index');
 });
 
 Route::view('profile', 'profile')

@@ -70,8 +70,8 @@ class CertificatePdfRenderer
 
     public function filename(Client $client, CertificateCategory $category): string
     {
-        $lastname = trim($client->lastname ?? '');
-        $name     = trim($client->name ?? '');
+        $lastname = $this->upperNoAccents(trim($client->lastname ?? ''));
+        $name     = $this->upperNoAccents(trim($client->name ?? ''));
         $base = trim($lastname.' '.$name) ?: 'certificate';
         $base = preg_replace('/[\\\\\/:*?"<>|]+/u', '', $base);
 

@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
 use App\Models\Client;
+use App\Models\ClientQrCode;
 use App\Services\CertificatePdfRenderer;
 use App\Services\CertificatePdfStore;
+use App\Services\QrCodeService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 class PublicCertificateController extends Controller
@@ -28,6 +31,7 @@ class PublicCertificateController extends Controller
 
         ActivityLog::record(ActivityLog::ACTION_CERTIFICATE_VIEW, [
             'organization_id' => $client->organization_id,
+            'user_id'         => Auth::id(),
             'client_id'       => $client->id,
             'client_name'     => trim(($client->lastname ?? '').' '.($client->name ?? '')),
             'client_email'    => $client->email,
@@ -39,10 +43,16 @@ class PublicCertificateController extends Controller
             ],
         ]);
 
+        $qr = ClientQrCode::where('client_id', $client->id)
+            ->where('category_id', $selected->id)
+            ->first()
+            ?? app(QrCodeService::class)->ensureFor($client, $selected);
+
         return view('certificates.public', [
             'client'         => $client,
             'categories'     => $categories,
             'selected'       => $selected,
+            'qr'             => $qr,
         ]);
     }
 
@@ -66,6 +76,7 @@ class PublicCertificateController extends Controller
 
         ActivityLog::record(ActivityLog::ACTION_PDF_DOWNLOAD, [
             'organization_id' => $client->organization_id,
+            'user_id'         => Auth::id(),
             'client_id'       => $client->id,
             'client_name'     => trim(($client->lastname ?? '').' '.($client->name ?? '')),
             'client_email'    => $client->email,

@@ -17,7 +17,17 @@
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
-                <h1 class="page-title">{{ __('Πελάτες') }}</h1>
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <h1 class="page-title">{{ __('Πελάτες') }}</h1>
+                    @if(! empty($lastExternalId))
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-800 ring-1 ring-inset ring-emerald-200 shadow-sm"
+                              title="{{ __('Πιο πρόσφατο Excel ID που καταχωρήθηκε') }}">
+                            <i class="fas fa-hashtag text-[10px] text-emerald-500"></i>
+                            <span class="text-emerald-700">{{ __('Τελευταίο Excel ID:') }}</span>
+                            <span class="font-mono font-semibold text-emerald-900">{{ $lastExternalId }}</span>
+                        </span>
+                    @endif
+                </div>
                 <p class="page-subtitle">{{ __('Διαχείριση πελατών & παραγωγή πιστοποιητικών') }}</p>
             </div>
             <div class="toolbar">
@@ -430,7 +440,7 @@
                                                 <i class="fas fa-pen text-xs"></i>
                                             </a>
                                             <button type="button" wire:click="confirmDelete({{ $client->id }})"
-                                                    class="w-8 h-8 rounded-md hover:bg-rose-50 flex items-center justify-center text-slate-600 hover:text-rose-600 transition-colors"
+                                                    class="w-8 h-8 rounded-md hover:bg-rose-50 flex items-center justify-center text-rose-500 hover:text-rose-700 transition-colors"
                                                     title="Διαγραφή">
                                                 <i class="fas fa-trash text-xs"></i>
                                             </button>

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\CertificatePdfStore;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -9,6 +10,15 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Client extends Model
 {
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Client $client) {
+            $store = app(CertificatePdfStore::class);
+            $store->deleteBulkPdfs($client);
+            $store->invalidate($client);
+        });
+    }
 
     protected $fillable = [
         'name',

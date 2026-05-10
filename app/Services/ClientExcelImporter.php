@@ -50,7 +50,8 @@ class ClientExcelImporter
         $headerRow = array_shift($rows);
         $columnMap = $this->buildColumnMap($headerRow);
 
-        $categories = CertificateCategory::all()->keyBy(fn ($c) => mb_strtolower($c->name));
+        $categories = CertificateCategory::where('organization_id', $organizationId)
+            ->get()->keyBy(fn ($c) => mb_strtolower($c->name));
         $customFields = ClientCustomField::where('organization_id', $organizationId)
             ->get()->keyBy('name');
 

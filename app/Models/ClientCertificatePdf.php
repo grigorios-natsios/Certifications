@@ -11,6 +11,7 @@ class ClientCertificatePdf extends Model
         'category_id',
         'path',
         'public_url',
+        'bulk_filename',
         'fingerprint',
         'generated_at',
     ];
