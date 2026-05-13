@@ -37,9 +37,11 @@ class BulkEmailReportMail extends Mailable implements ShouldQueue
 
     public function build()
     {
+        $noun = $this->sentCount === 1 ? 'πιστοποιητικό' : 'πιστοποιητικά';
+
         $subject = $this->failedCount > 0
-            ? "Αναφορά μαζικής αποστολής — {$this->sentCount} OK, {$this->failedCount} αποτυχίες"
-            : "Αναφορά μαζικής αποστολής — {$this->sentCount} επιτυχείς αποστολές";
+            ? "Αναφορά αποστολών — {$this->sentCount} επιτυχείς, {$this->failedCount} αποτυχίες"
+            : "Αναφορά αποστολών — {$this->sentCount} {$noun}";
 
         return $this->subject($subject)
             ->view('emails.bulk-email-report');

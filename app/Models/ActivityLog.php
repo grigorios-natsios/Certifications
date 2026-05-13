@@ -7,14 +7,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ActivityLog extends Model
 {
-    public const ACTION_PDF_DOWNLOAD     = 'pdf_download';
-    public const ACTION_CERTIFICATE_VIEW = 'certificate_view';
-    public const ACTION_EMAIL_BATCH      = 'email_batch';
+    public const ACTION_PDF_DOWNLOAD = 'pdf_download';
+    public const ACTION_EMAIL_BATCH  = 'email_batch';
 
     public const ACTIONS = [
-        self::ACTION_PDF_DOWNLOAD     => 'Λήψη PDF',
-        self::ACTION_CERTIFICATE_VIEW => 'Άνοιγμα σελίδας',
-        self::ACTION_EMAIL_BATCH      => 'Αποστολή email',
+        self::ACTION_PDF_DOWNLOAD => 'Λήψη PDF',
+        self::ACTION_EMAIL_BATCH  => 'Αποστολή email',
     ];
 
     protected $fillable = [

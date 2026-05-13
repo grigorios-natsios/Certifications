@@ -3,7 +3,7 @@
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
                 <h1 class="page-title">{{ __('Καταγραφές') }}</h1>
-                <p class="page-subtitle">{{ __('Λήψεις PDF, ανοίγματα σελίδας πιστοποιητικού και αποστολές email — έτος') }} {{ $currentYear }}.</p>
+                <p class="page-subtitle">{{ __('Λήψεις PDF και αποστολές email — έτος') }} {{ $currentYear }}.</p>
             </div>
             <div class="toolbar">
                 <a href="{{ route('dashboard') }}" wire:navigate
@@ -26,7 +26,7 @@
                     <div class="flex-1 min-w-0">
                         <h2 class="text-base font-bold text-slate-900 tracking-tight">{{ __('Καταγραφές') }}</h2>
                         <p class="text-xs text-slate-500 mt-1">
-                            {{ __('Λήψεις PDF, ανοίγματα σελίδας πιστοποιητικού και αποστολές email — έτος') }} {{ $currentYear }}.
+                            {{ __('Λήψεις PDF και αποστολές email — έτος') }} {{ $currentYear }}.
                         </p>
                     </div>
                     @if($oldCount > 0)
@@ -40,12 +40,11 @@
                 </div>
 
                 {{-- Stats summary --}}
-                <div class="px-6 py-4 grid grid-cols-1 sm:grid-cols-3 gap-3 border-b border-slate-100">
+                <div class="px-6 py-4 grid grid-cols-1 sm:grid-cols-2 gap-3 border-b border-slate-100">
                     @php
                         $cards = [
-                            ['action' => 'pdf_download',     'label' => 'Λήψεις PDF',          'icon' => 'fa-file-arrow-down',  'bg' => 'bg-emerald-50', 'fg' => 'text-emerald-700'],
-                            ['action' => 'certificate_view', 'label' => 'Ανοίγματα σελίδας',   'icon' => 'fa-eye',              'bg' => 'bg-sky-50',     'fg' => 'text-sky-700'],
-                            ['action' => 'email_batch',      'label' => 'Αποστολές email',     'icon' => 'fa-paper-plane',      'bg' => 'bg-violet-50',  'fg' => 'text-violet-700'],
+                            ['action' => 'pdf_download', 'label' => 'Λήψεις PDF',      'icon' => 'fa-file-arrow-down', 'bg' => 'bg-emerald-50', 'fg' => 'text-emerald-700'],
+                            ['action' => 'email_batch',  'label' => 'Αποστολές email', 'icon' => 'fa-paper-plane',     'bg' => 'bg-violet-50',  'fg' => 'text-violet-700'],
                         ];
                     @endphp
                     @foreach($cards as $card)
@@ -121,10 +120,9 @@
                             @forelse($logs as $log)
                                 @php
                                     $actionStyle = match($log->action) {
-                                        'pdf_download'     => ['icon' => 'fa-file-arrow-down', 'bg' => 'bg-emerald-50', 'fg' => 'text-emerald-700'],
-                                        'certificate_view' => ['icon' => 'fa-eye',             'bg' => 'bg-sky-50',     'fg' => 'text-sky-700'],
-                                        'email_batch'      => ['icon' => 'fa-paper-plane',     'bg' => 'bg-violet-50',  'fg' => 'text-violet-700'],
-                                        default            => ['icon' => 'fa-circle-info',    'bg' => 'bg-slate-100',  'fg' => 'text-slate-700'],
+                                        'pdf_download' => ['icon' => 'fa-file-arrow-down', 'bg' => 'bg-emerald-50', 'fg' => 'text-emerald-700'],
+                                        'email_batch'  => ['icon' => 'fa-paper-plane',     'bg' => 'bg-violet-50',  'fg' => 'text-violet-700'],
+                                        default        => ['icon' => 'fa-circle-info',    'bg' => 'bg-slate-100',  'fg' => 'text-slate-700'],
                                     };
                                 @endphp
                                 <tr class="hover:bg-slate-50/60 transition-colors">

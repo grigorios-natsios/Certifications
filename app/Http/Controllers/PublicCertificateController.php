@@ -17,10 +17,10 @@ class PublicCertificateController extends Controller
     public function show(Request $request, string $slug)
     {
         $client = $this->resolveClient($slug);
-        $categories = $client->certificateCategories()
+        $categories = $client->certificateCategories
             ->whereNotNull('html_template')
-            ->orderBy('name')
-            ->get();
+            ->sortBy('name')
+            ->values();
 
         if ($categories->isEmpty()) {
             abort(404, 'Δεν υπάρχει διαθέσιμο πιστοποιητικό για αυτόν τον πελάτη.');
@@ -28,20 +28,6 @@ class PublicCertificateController extends Controller
 
         $selected = $categories->firstWhere('slug', $request->query('cat'))
             ?? $categories->first();
-
-        ActivityLog::record(ActivityLog::ACTION_CERTIFICATE_VIEW, [
-            'organization_id' => $client->organization_id,
-            'user_id'         => Auth::id(),
-            'client_id'       => $client->id,
-            'client_name'     => trim(($client->lastname ?? '').' '.($client->name ?? '')),
-            'client_email'    => $client->email,
-            'subject'         => $selected->name,
-            'meta'            => [
-                'ip'         => $request->ip(),
-                'user_agent' => substr((string) $request->userAgent(), 0, 255),
-                'category_id' => $selected->id,
-            ],
-        ]);
 
         $qr = ClientQrCode::where('client_id', $client->id)
             ->where('category_id', $selected->id)
@@ -104,10 +90,14 @@ class PublicCertificateController extends Controller
     {
         $client = $this->resolveClient($slug);
 
-        $query = $client->certificateCategories()->whereNotNull('html_template');
+        $candidates = $client->certificateCategories
+            ->whereNotNull('html_template')
+            ->sortBy('name')
+            ->values();
+
         $category = $categorySlug
-            ? $query->where('slug', $categorySlug)->first()
-            : $query->first();
+            ? $candidates->firstWhere('slug', $categorySlug)
+            : $candidates->first();
 
         if (! $category) {
             abort(404, 'Πιστοποιητικό μη διαθέσιμο.');

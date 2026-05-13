@@ -59,17 +59,24 @@ class Create extends Component
 
         // Custom values are scoped per category (per certificate). Only persist
         // values that belong to a category the client is actually attached to.
+        $now = now();
+        $rows = [];
         foreach ($this->selectedCategories as $catId) {
             $values = $this->customValues[$catId] ?? [];
             foreach ($values as $fieldId => $value) {
                 if ($value === null || $value === '') continue;
-                ClientCustomValue::create([
+                $rows[] = [
                     'client_id'               => $client->id,
                     'custom_field_id'         => $fieldId,
                     'certificate_category_id' => $catId,
                     'value'                   => $value,
-                ]);
+                    'created_at'              => $now,
+                    'updated_at'              => $now,
+                ];
             }
+        }
+        if ($rows) {
+            ClientCustomValue::insert($rows);
         }
 
         $qrService->ensureAllFor($client->fresh('certificateCategories'));
@@ -85,7 +92,8 @@ class Create extends Component
         return view('livewire.clients.create', [
             'categories'   => CertificateCategory::where('organization_id', Auth::user()->organization_id)
                 ->orderBy('name')->get(),
-            'customFields' => ClientCustomField::where('organization_id', Auth::user()->organization_id)
+            'customFields' => ClientCustomField::with('categories:id')
+                ->where('organization_id', Auth::user()->organization_id)
                 ->orderBy('name')->get(),
         ]);
     }

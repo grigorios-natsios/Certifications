@@ -18,6 +18,39 @@ class Branding
     }
 
     /**
+     * Absolute filesystem path to the logo for inline email embedding (CID).
+     * Returns null if no logo file is present locally.
+     */
+    public static function logoPath(): ?string
+    {
+        return self::resolvePath(
+            (string) config('branding.logo', ''),
+            ['images/logo.png', 'images/logo.svg', 'images/logo.jpg']
+        );
+    }
+
+    private static function resolvePath(string $configured, array $fallbacks): ?string
+    {
+        $configured = trim($configured);
+
+        if ($configured !== '' && ! preg_match('#^https?://#i', $configured)) {
+            $abs = public_path(ltrim($configured, '/'));
+            if (is_file($abs)) {
+                return $abs;
+            }
+        }
+
+        foreach ($fallbacks as $candidate) {
+            $abs = public_path($candidate);
+            if (is_file($abs)) {
+                return $abs;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Resolve the favicon URL.
      * Priority: APP_FAVICON env → public/favicon.ico → null.
      */

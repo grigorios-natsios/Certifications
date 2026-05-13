@@ -23,7 +23,11 @@ class ClientCustomFieldSeeder extends Seeder
         foreach ($defaults as $field) {
             ClientCustomField::firstOrCreate(
                 ['organization_id' => $organization->id, 'name' => $field['name']],
-                ['type' => $field['type'], 'is_required' => $field['is_required']]
+                [
+                    'type'           => $field['type'],
+                    'is_required'    => $field['is_required'],
+                    'applies_to_all' => true,
+                ]
             );
         }
     }

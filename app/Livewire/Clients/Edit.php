@@ -82,26 +82,43 @@ class Edit extends Component
         $this->client->certificateCategories()->sync($this->selectedCategories);
 
         // Persist values per attached category. Empty fields delete the row so
-        // the certificate doesn't keep stale data.
+        // the certificate doesn't keep stale data. Bulk-write to avoid N*M
+        // queries on forms with several categories × fields.
+        $now = now();
+        $upserts = [];
+        $emptyByCategory = [];
+
         foreach ($this->selectedCategories as $catId) {
             $values = $this->customValues[$catId] ?? [];
             foreach ($values as $fieldId => $value) {
                 if ($value === null || $value === '') {
-                    ClientCustomValue::where('client_id', $this->client->id)
-                        ->where('custom_field_id', $fieldId)
-                        ->where('certificate_category_id', $catId)
-                        ->delete();
+                    $emptyByCategory[$catId][] = $fieldId;
                     continue;
                 }
-                ClientCustomValue::updateOrCreate(
-                    [
-                        'client_id'               => $this->client->id,
-                        'custom_field_id'         => $fieldId,
-                        'certificate_category_id' => $catId,
-                    ],
-                    ['value' => $value]
-                );
+                $upserts[] = [
+                    'client_id'               => $this->client->id,
+                    'custom_field_id'         => $fieldId,
+                    'certificate_category_id' => $catId,
+                    'value'                   => $value,
+                    'created_at'              => $now,
+                    'updated_at'              => $now,
+                ];
             }
+        }
+
+        if ($upserts) {
+            ClientCustomValue::upsert(
+                $upserts,
+                ['client_id', 'custom_field_id', 'certificate_category_id'],
+                ['value', 'updated_at']
+            );
+        }
+
+        foreach ($emptyByCategory as $catId => $fieldIds) {
+            ClientCustomValue::where('client_id', $this->client->id)
+                ->where('certificate_category_id', $catId)
+                ->whereIn('custom_field_id', $fieldIds)
+                ->delete();
         }
 
         $fresh = $this->client->fresh('certificateCategories');
@@ -129,7 +146,8 @@ class Edit extends Component
         return view('livewire.clients.edit', [
             'categories'   => CertificateCategory::where('organization_id', Auth::user()->organization_id)
                 ->orderBy('name')->get(),
-            'customFields' => ClientCustomField::where('organization_id', Auth::user()->organization_id)
+            'customFields' => ClientCustomField::with('categories:id')
+                ->where('organization_id', Auth::user()->organization_id)
                 ->orderBy('name')->get(),
         ]);
     }

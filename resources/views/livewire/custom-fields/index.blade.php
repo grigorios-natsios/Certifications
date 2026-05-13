@@ -32,6 +32,7 @@
                                 <th class="w-14">ID</th>
                                 <th>{{ __('Όνομα') }}</th>
                                 <th>{{ __('Τύπος') }}</th>
+                                <th>{{ __('Κατηγορίες') }}</th>
                                 <th>{{ __('Απαραίτητο') }}</th>
                                 <th class="text-right">{{ __('Ενέργειες') }}</th>
                             </tr>
@@ -45,6 +46,19 @@
                                     </td>
                                     <td>
                                         <span class="badge badge-slate">{{ $types[$field->type] ?? $field->type }}</span>
+                                    </td>
+                                    <td>
+                                        @if($field->applies_to_all)
+                                            <span class="badge badge-slate">{{ __('Όλες οι κατηγορίες') }}</span>
+                                        @elseif($field->categories->isEmpty())
+                                            <span class="text-slate-300">—</span>
+                                        @else
+                                            <div class="flex flex-wrap gap-1">
+                                                @foreach($field->categories as $cat)
+                                                    <span class="badge badge-slate">{{ $cat->name }}</span>
+                                                @endforeach
+                                            </div>
+                                        @endif
                                     </td>
                                     <td>
                                         @if($field->is_required)
@@ -61,7 +75,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5">
+                                    <td colspan="6">
                                         <div class="empty-state">
                                             <div class="empty-state-icon"><i class="fas fa-list-check text-slate-400"></i></div>
                                             <h3 class="mt-3 text-sm font-medium text-slate-900">{{ __('Δεν υπάρχουν προσαρμοσμένα πεδία') }}</h3>
@@ -109,6 +123,32 @@
                                 <input type="checkbox" wire:model="is_required" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
                                 <span class="text-sm text-slate-700">{{ __('Απαραίτητο') }}</span>
                             </label>
+
+                            <div class="pt-2 border-t border-slate-100">
+                                <label class="label">{{ __('Σε ποιες κατηγορίες εμφανίζεται') }}</label>
+                                <label class="inline-flex items-center gap-2">
+                                    <input type="checkbox" wire:model.live="applies_to_all" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+                                    <span class="text-sm text-slate-700">{{ __('Σε όλες τις κατηγορίες') }}</span>
+                                </label>
+
+                                @unless($applies_to_all)
+                                    @if($categories->count())
+                                        <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            @foreach($categories as $cat)
+                                                <label class="flex items-center gap-2 px-3 py-2 rounded-md border cursor-pointer transition
+                                                              {{ in_array($cat->id, $selectedCategories) ? 'border-brand-500 bg-brand-50/40' : 'border-slate-200 hover:border-slate-300 bg-white' }}">
+                                                    <input type="checkbox" value="{{ $cat->id }}" wire:model="selectedCategories" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+                                                    <span class="text-sm text-slate-700">{{ $cat->name }}</span>
+                                                </label>
+                                            @endforeach
+                                        </div>
+                                        @error('selectedCategories') <p class="text-rose-600 text-sm mt-1">{{ $message }}</p> @enderror
+                                        @error('selectedCategories.*') <p class="text-rose-600 text-sm mt-1">{{ $message }}</p> @enderror
+                                    @else
+                                        <p class="text-xs text-slate-500 mt-2">{{ __('Δεν υπάρχουν διαθέσιμες κατηγορίες.') }}</p>
+                                    @endif
+                                @endunless
+                            </div>
                         </div>
                         <div class="modal-footer">
                             <button type="button" wire:click="closeModal" class="btn-secondary">{{ __('Άκυρο') }}</button>
