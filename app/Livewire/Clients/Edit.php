@@ -6,6 +6,7 @@ use App\Models\CertificateCategory;
 use App\Models\Client;
 use App\Models\ClientCustomField;
 use App\Models\ClientCustomValue;
+use App\Models\ClientQrCode;
 use App\Services\CertificatePdfStore;
 use App\Services\QrCodeService;
 use Illuminate\Support\Facades\Auth;
@@ -80,6 +81,10 @@ class Edit extends Component
         ]);
 
         $this->client->certificateCategories()->sync($this->selectedCategories);
+
+        ClientQrCode::where('client_id', $this->client->id)
+            ->whereNotIn('category_id', $this->selectedCategories)
+            ->delete();
 
         // Persist values per attached category. Empty fields delete the row so
         // the certificate doesn't keep stale data. Bulk-write to avoid N*M
