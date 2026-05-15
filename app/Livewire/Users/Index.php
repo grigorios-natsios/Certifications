@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Users;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -22,7 +23,7 @@ class Index extends Component
 
     public function mount(): void
     {
-        abort_if(Auth::user()->role !== 'admin', 403);
+        abort_if(Auth::user()->role !== UserRole::ADMIN, 403);
     }
 
     public function updatedSearch() { $this->resetPage(); }
@@ -56,7 +57,7 @@ class Index extends Component
 
     public function toggleActive(int $id): void
     {
-        if (Auth::user()->role !== 'admin') {
+        if (Auth::user()->role !== UserRole::ADMIN) {
             $this->dispatch('toast', message: 'Μόνο ο admin μπορεί να αλλάξει την κατάσταση χρηστών.', type: 'warning');
             return;
         }

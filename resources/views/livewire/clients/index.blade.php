@@ -578,7 +578,19 @@
                         <span wire:loading wire:target="sendEmails">{{ __('Αποστολή email σε εξέλιξη...') }}</span>
                     </p>
                     <p class="text-sm text-slate-600 mt-1">
-                        {{ __('Επεξεργασία') }} {{ count($selected) }} {{ count($selected) === 1 ? __('εγγραφής') : __('εγγραφών') }} — {{ __('μην κλείσεις τη σελίδα.') }}
+                        <span wire:loading wire:target="generatePdfs">
+                            {{ __('Παραγωγή') }} <span class="font-semibold">{{ $this->selectedPdfCount }}</span>
+                            {{ $this->selectedPdfCount === 1 ? __('πιστοποιητικού') : __('πιστοποιητικών') }}
+                        </span>
+                        <span wire:loading wire:target="downloadPdfs">
+                            {{ __('Συμπίεση') }} <span class="font-semibold">{{ $this->selectedPdfCount }}</span>
+                            {{ $this->selectedPdfCount === 1 ? __('πιστοποιητικού') : __('πιστοποιητικών') }}
+                        </span>
+                        <span wire:loading wire:target="sendEmails">
+                            {{ __('Αποστολή σε') }} <span class="font-semibold">{{ count($selected) }}</span>
+                            {{ count($selected) === 1 ? __('πελάτη') : __('πελάτες') }}
+                        </span>
+                        — {{ __('μην κλείσεις τη σελίδα.') }}
                     </p>
                 </div>
             </div>

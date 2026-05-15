@@ -182,6 +182,38 @@ class CertificatePdfStore
     }
 
     /**
+     * Refresh a single (client, category) pair. Used after a category's
+     * template / orientation / name changes, so each client's PDF for that
+     * category reflects the new state. Bulk PDF is only re-created if a
+     * bulk filename was tracked for this pair before the wipe.
+     */
+    public function refreshClientCategory(Client $client, CertificateCategory $category): void
+    {
+        if (! $category->html_template) {
+            $this->invalidate($client, $category);
+            return;
+        }
+
+        $row = ClientCertificatePdf::where('client_id', $client->id)
+            ->where('category_id', $category->id)
+            ->first();
+        $hadBulk = $row && $row->bulk_filename;
+
+        if ($hadBulk) {
+            @unlink($this->bulkDir().DIRECTORY_SEPARATOR.$row->bulk_filename);
+        }
+        @unlink($this->cachePath($client, $category));
+        if ($row) {
+            $row->delete();
+        }
+
+        $this->generate($client, $category);
+        if ($hadBulk) {
+            $this->generateBulk($client, $category);
+        }
+    }
+
+    /**
      * Refresh every PDF artefact for a client. Used after edits so cached and
      * bulk files reflect the latest data. Bulk PDFs are only re-created for
      * (client, category) combos that already had a tracked bulk filename —
@@ -193,7 +225,24 @@ class CertificatePdfStore
     public function refreshAllForClient(Client $client): void
     {
         $client->loadMissing('certificateCategories');
+        $bulkCategoryIds = $this->wipeAllForClient($client);
 
+        foreach ($client->certificateCategories as $cat) {
+            if (! $cat->html_template) continue;
+            $this->generate($client, $cat);
+            if (in_array($cat->id, $bulkCategoryIds, true)) {
+                $this->generateBulk($client, $cat);
+            }
+        }
+    }
+
+    /**
+     * Wipe phase of a refresh: delete every cached + bulk PDF file tracked for
+     * this client and clear the DB rows. Returns the category IDs that had a
+     * bulk file before the wipe, so the caller can regenerate just those bulks.
+     */
+    public function wipeAllForClient(Client $client): array
+    {
         // Snapshot all PDF tracking before we wipe — covers attached and
         // detached categories alike (latter would otherwise leak files).
         $rows = ClientCertificatePdf::where('client_id', $client->id)->get();
@@ -211,13 +260,7 @@ class CertificatePdfStore
 
         ClientCertificatePdf::where('client_id', $client->id)->delete();
 
-        foreach ($client->certificateCategories as $cat) {
-            if (! $cat->html_template) continue;
-            $this->generate($client, $cat);
-            if (in_array($cat->id, $bulkCategoryIds, true)) {
-                $this->generateBulk($client, $cat);
-            }
-        }
+        return $bulkCategoryIds;
     }
 
     /**
@@ -256,22 +299,6 @@ class CertificatePdfStore
                 @unlink($bulkDir.DIRECTORY_SEPARATOR.$entry);
             }
         }
-    }
-
-    /**
-     * Generate cached PDFs for every renderable category of the client.
-     * Returns the number of files actually written.
-     */
-    public function regenerateAll(Client $client): int
-    {
-        $client->loadMissing('certificateCategories');
-        $count = 0;
-        foreach ($client->certificateCategories as $category) {
-            if (! $category->html_template) continue;
-            $this->generate($client, $category);
-            $count++;
-        }
-        return $count;
     }
 
     private function upsertRow(Client $client, CertificateCategory $category, mixed $generatedAt): void

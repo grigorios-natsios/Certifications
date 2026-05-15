@@ -3,6 +3,7 @@
 namespace App\Livewire\Clients;
 
 use App\Jobs\GenerateClientPdfs;
+use App\Models\ActivityLog;
 use App\Models\CertificateCategory;
 use App\Models\Client;
 use App\Models\ClientCustomField;
@@ -82,6 +83,20 @@ class Create extends Component
         $qrService->ensureAllFor($client->fresh('certificateCategories'));
 
         GenerateClientPdfs::dispatch($client->id, invalidateFirst: false);
+
+        ActivityLog::record(ActivityLog::ACTION_CLIENT_CREATE, [
+            'organization_id' => Auth::user()->organization_id,
+            'user_id'         => Auth::id(),
+            'client_id'       => $client->id,
+            'client_name'     => trim(($client->lastname ?? '').' '.($client->name ?? '')),
+            'client_email'    => $client->email,
+            'subject'         => 'Χειροκίνητη δημιουργία',
+            'meta'            => [
+                'ip'               => request()->ip(),
+                'triggered_by'     => Auth::user()->email,
+                'categories_count' => count($this->selectedCategories),
+            ],
+        ]);
 
         session()->flash('toast', ['type' => 'success', 'message' => 'Ο πελάτης δημιουργήθηκε.']);
         return redirect()->route('clients.index');

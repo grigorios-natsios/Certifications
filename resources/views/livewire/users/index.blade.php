@@ -137,7 +137,7 @@
                                         <a href="mailto:{{ $user->email }}" class="hover:text-slate-900">{{ $user->email }}</a>
                                     </td>
                                     <td>
-                                        @php($canToggle = auth()->user()->role === 'admin' && $user->id !== auth()->id() && $user->id !== 1)
+                                        @php($canToggle = auth()->user()->isAdmin() && $user->id !== auth()->id() && $user->id !== 1)
                                         <button type="button"
                                                 @if($canToggle) wire:click="toggleActive({{ $user->id }})" @else disabled @endif
                                                 role="switch"
@@ -166,12 +166,14 @@
                                             <a href="{{ route('users.edit', $user->id) }}" wire:navigate class="btn-icon" title="Επεξεργασία">
                                                 <i class="fas fa-pen text-xs"></i>
                                             </a>
-                                            <button type="button" wire:click="confirmDelete({{ $user->id }})"
-                                                    @if($user->id === auth()->id() || $user->id === 1) disabled @endif
-                                                    class="btn-icon-danger"
-                                                    title="{{ $user->id === 1 ? 'Ο Super Admin δεν διαγράφεται' : 'Διαγραφή' }}">
-                                                <i class="fas fa-trash text-xs"></i>
-                                            </button>
+                                            @if(auth()->user()->isAdmin())
+                                                <button type="button" wire:click="confirmDelete({{ $user->id }})"
+                                                        @if($user->id === auth()->id() || $user->id === 1) disabled @endif
+                                                        class="btn-icon-danger"
+                                                        title="{{ $user->id === 1 ? 'Ο Super Admin δεν διαγράφεται' : 'Διαγραφή' }}">
+                                                    <i class="fas fa-trash text-xs"></i>
+                                                </button>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>

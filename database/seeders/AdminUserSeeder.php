@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use App\Enums\UserRole;
 use App\Models\User;
 use App\Models\Organization;
 use Illuminate\Support\Facades\Hash;
@@ -12,7 +13,7 @@ class AdminUserSeeder extends Seeder
     public function run(): void
     {
         $organizationData = [
-            'name'          => 'Lia Naoumidou',
+            'name'          => 'Κέντρο Εκπαίδευσης "Ναουμίδου"',
             'address'       => 'Δημαρχίας 13, Νάουσα, Ημαθία',
             'phones'        => ['23320 29485', '23320 21071'],
             'email'         => 'info@lianaoumidou.gr',
@@ -32,11 +33,11 @@ class AdminUserSeeder extends Seeder
         }
 
         User::firstOrCreate(
-            ['email' => 'grigoriosnatsio@gmail.com'],
+            ['email' => 'info@lianaoumidou.gr'],
             [
-                'name' => 'Super Admin',
+                'name' => 'Αναστάσης Τσίτσης',
                 'password' => Hash::make('12345678'),
-                'role' => 'admin',
+                'role' => UserRole::ADMIN,
                 'organization_id' => $organization->id,
             ]
         );

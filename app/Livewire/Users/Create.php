@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Users;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -20,7 +21,7 @@ class Create extends Component
 
     public function mount(): void
     {
-        abort_if(Auth::user()->role !== 'admin', 403);
+        abort_if(Auth::user()->role !== UserRole::ADMIN, 403);
     }
 
     protected function rules(): array

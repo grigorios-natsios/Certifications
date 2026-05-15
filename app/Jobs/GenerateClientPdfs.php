@@ -33,14 +33,37 @@ class GenerateClientPdfs implements ShouldQueue
         $qrService->ensureAllFor($client);
         $client->load('certificateCategories', 'customValues.field');
 
-        if ($this->invalidateFirst) {
-            // Wipe + regen everything (cached + previously-bulk combos).
-            $pdfStore->refreshAllForClient($client);
-            return;
-        }
+        // Wipe + collect previously-bulk categories so we know which to regen
+        // human-named files for. Fresh imports have nothing to wipe.
+        $bulkCategoryIds = $this->invalidateFirst
+            ? $pdfStore->wipeAllForClient($client)
+            : [];
 
-        // First-time generation (e.g. fresh import) — only cached, no bulk
-        // because the user hasn't asked for human-named files yet.
-        $pdfStore->regenerateAll($client);
+        foreach ($client->certificateCategories as $category) {
+            if (! $category->html_template) continue;
+
+            $path = $pdfStore->generate($client, $category);
+
+            // If the client got deleted while we were rendering, the file we
+            // just wrote is an orphan (pruneAllForClient already ran at delete
+            // time and can't run again). Drop it and bail out — any remaining
+            // categories would be orphans too, and the next upsertRow call
+            // would FK-violate anyway.
+            if (! Client::whereKey($this->clientId)->exists()) {
+                @unlink($path);
+                return;
+            }
+
+            if (in_array($category->id, $bulkCategoryIds, true)) {
+                $bulkFilename = $pdfStore->generateBulk($client, $category);
+
+                if (! Client::whereKey($this->clientId)->exists()) {
+                    if ($bulkFilename) {
+                        @unlink($pdfStore->bulkDir().DIRECTORY_SEPARATOR.$bulkFilename);
+                    }
+                    return;
+                }
+            }
+        }
     }
 }

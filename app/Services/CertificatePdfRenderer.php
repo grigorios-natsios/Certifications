@@ -16,8 +16,10 @@ class CertificatePdfRenderer
 
         $html = $this->fillTemplate($category->html_template ?? '', $client, $category);
 
+        $orientation = ($category->orientation ?? 'portrait') === 'landscape' ? 'landscape' : 'portrait';
+
         $pdf = Pdf::loadHTML($html)
-            ->setPaper('a4', 'portrait')
+            ->setPaper('a4', $orientation)
             ->setOptions([
                 'isHtml5ParserEnabled' => true,
                 'isRemoteEnabled'      => true,
@@ -182,7 +184,10 @@ class CertificatePdfRenderer
             $value = (string) $cv->value;
 
             if (optional($cv->field)->type === 'date' && $value !== '') {
-                $value = date('d/m/Y', strtotime($value));
+                $ts = strtotime($value);
+                if ($ts !== false) {
+                    $value = date('d/m/Y', $ts);
+                }
             }
 
             $replacements['{{cf_'.$cv->custom_field_id.'}}'] = e($value);

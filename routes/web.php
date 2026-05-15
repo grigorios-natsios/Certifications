@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Controllers\PublicCertificateController;
+use App\Http\Controllers\TemplateImageController;
 use App\Livewire\ActivityLogs;
 use App\Livewire\Categories;
 use App\Livewire\Clients;
 use App\Livewire\CustomFields;
 use App\Livewire\Dashboard;
+use App\Livewire\Organization;
 use App\Livewire\Users;
 use App\Services\QrCodeService;
 use Illuminate\Http\Request;
@@ -29,6 +31,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/custom-fields',         CustomFields\Index::class)->name('custom-fields.index');
 
     Route::get('/activity-logs',         ActivityLogs\Index::class)->name('activity-logs.index');
+
+    Route::get('/organization/edit',     Organization\Edit::class)->name('organization.edit');
+
+    Route::get   ('/template-images',         [TemplateImageController::class, 'index'])  ->name('template-images.index');
+    Route::post  ('/template-images',         [TemplateImageController::class, 'upload']) ->name('template-images.upload');
+    Route::delete('/template-images/{name}',  [TemplateImageController::class, 'destroy'])
+        ->where('name', '[A-Za-z0-9._-]+')
+        ->name('template-images.destroy');
 });
 
 Route::view('profile', 'profile')

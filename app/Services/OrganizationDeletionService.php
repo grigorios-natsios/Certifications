@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Client;
+use App\Models\ClientCertificatePdf;
 use App\Models\Organization;
 use Illuminate\Support\Facades\DB;
 
@@ -15,13 +16,13 @@ class OrganizationDeletionService
      *  - bulk_email_results rows (no FK, would otherwise leak emails)
      *  - the organization itself (DB cascades → users, clients, certificates,
      *    custom fields, activity logs, qr codes, certificate_pdfs, custom values)
-     *  - cached + bulk PDFs on disk for every client (aggressive glob/scandir
-     *    cleanup catches stragglers from renames or detached categories)
+     *  - every PDF on disk: cached files keyed by client id, bulk files
+     *    addressed by their tracked filename (captured before the cascade),
+     *    plus a name-pattern fallback for files whose tracking row was lost
+     *  - template images uploaded under public/uploads/templates/{org_id}/
      *
-     * DB deletes run inside a transaction first; disk cleanup runs after a
-     * successful commit so a DB rollback can never leave us with vanished
-     * files but live rows. Disk cleanup is best-effort — the in-memory client
-     * collection survives the DB delete and provides id/name/categories.
+     * Bulk filenames are snapshotted before the transaction so the cascade
+     * deleting client_certificate_pdfs doesn't strand the disk artefacts.
      */
     public function delete(Organization $organization): void
     {
@@ -30,6 +31,12 @@ class OrganizationDeletionService
             ->get();
 
         $clientIds = $clients->pluck('id')->all();
+        $orgId     = $organization->id;
+
+        $bulkFilenames = ClientCertificatePdf::whereIn('client_id', $clientIds)
+            ->whereNotNull('bulk_filename')
+            ->pluck('bulk_filename')
+            ->all();
 
         DB::transaction(function () use ($organization, $clientIds) {
             if (! empty($clientIds)) {
@@ -38,8 +45,27 @@ class OrganizationDeletionService
             $organization->delete();
         });
 
+        $bulkDir = $this->pdfStore->bulkDir();
+        foreach ($bulkFilenames as $filename) {
+            @unlink($bulkDir.DIRECTORY_SEPARATOR.$filename);
+        }
+
         foreach ($clients as $client) {
             $this->pdfStore->pruneAllForClient($client);
         }
+
+        $this->pruneTemplateImages($orgId);
+    }
+
+    private function pruneTemplateImages(int $orgId): void
+    {
+        $dir = public_path('uploads'.DIRECTORY_SEPARATOR.'templates'.DIRECTORY_SEPARATOR.$orgId);
+        if (! is_dir($dir)) return;
+
+        foreach (scandir($dir) ?: [] as $file) {
+            if ($file === '.' || $file === '..') continue;
+            @unlink($dir.DIRECTORY_SEPARATOR.$file);
+        }
+        @rmdir($dir);
     }
 }

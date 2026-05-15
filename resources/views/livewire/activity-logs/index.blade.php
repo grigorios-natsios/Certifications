@@ -40,11 +40,13 @@
                 </div>
 
                 {{-- Stats summary --}}
-                <div class="px-6 py-4 grid grid-cols-1 sm:grid-cols-2 gap-3 border-b border-slate-100">
+                <div class="px-6 py-4 grid grid-cols-2 sm:grid-cols-4 gap-3 border-b border-slate-100">
                     @php
                         $cards = [
-                            ['action' => 'pdf_download', 'label' => 'Λήψεις PDF',      'icon' => 'fa-file-arrow-down', 'bg' => 'bg-emerald-50', 'fg' => 'text-emerald-700'],
-                            ['action' => 'email_batch',  'label' => 'Αποστολές email', 'icon' => 'fa-paper-plane',     'bg' => 'bg-violet-50',  'fg' => 'text-violet-700'],
+                            ['action' => 'pdf_download',   'label' => 'Λήψεις PDF',           'icon' => 'fa-file-arrow-down', 'bg' => 'bg-emerald-50', 'fg' => 'text-emerald-700'],
+                            ['action' => 'email_batch',    'label' => 'Αποστολές email',      'icon' => 'fa-paper-plane',     'bg' => 'bg-violet-50',  'fg' => 'text-violet-700'],
+                            ['action' => 'client_import',  'label' => 'Εισαγωγές Excel',      'icon' => 'fa-file-import',     'bg' => 'bg-sky-50',     'fg' => 'text-sky-700'],
+                            ['action' => 'client_create',  'label' => 'Νέοι πελάτες',         'icon' => 'fa-user-plus',       'bg' => 'bg-amber-50',   'fg' => 'text-amber-700'],
                         ];
                     @endphp
                     @foreach($cards as $card)
@@ -110,7 +112,7 @@
                         <thead>
                             <tr class="bg-slate-50/60 border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500">
                                 <th class="text-left px-6 py-2.5 font-semibold">{{ __('Ενέργεια') }}</th>
-                                <th class="text-left px-4 py-2.5 font-semibold">{{ __('Πελάτης') }}</th>
+                                <th class="text-left px-4 py-2.5 font-semibold">{{ __('Χρήστης') }}</th>
                                 <th class="text-left px-4 py-2.5 font-semibold">{{ __('Θέμα') }}</th>
                                 <th class="text-left px-4 py-2.5 font-semibold">{{ __('IP') }}</th>
                                 <th class="text-right px-6 py-2.5 font-semibold">{{ __('Ημερομηνία') }}</th>
@@ -120,9 +122,11 @@
                             @forelse($logs as $log)
                                 @php
                                     $actionStyle = match($log->action) {
-                                        'pdf_download' => ['icon' => 'fa-file-arrow-down', 'bg' => 'bg-emerald-50', 'fg' => 'text-emerald-700'],
-                                        'email_batch'  => ['icon' => 'fa-paper-plane',     'bg' => 'bg-violet-50',  'fg' => 'text-violet-700'],
-                                        default        => ['icon' => 'fa-circle-info',    'bg' => 'bg-slate-100',  'fg' => 'text-slate-700'],
+                                        'pdf_download'  => ['icon' => 'fa-file-arrow-down', 'bg' => 'bg-emerald-50', 'fg' => 'text-emerald-700'],
+                                        'email_batch'   => ['icon' => 'fa-paper-plane',     'bg' => 'bg-violet-50',  'fg' => 'text-violet-700'],
+                                        'client_import' => ['icon' => 'fa-file-import',     'bg' => 'bg-sky-50',     'fg' => 'text-sky-700'],
+                                        'client_create' => ['icon' => 'fa-user-plus',       'bg' => 'bg-amber-50',   'fg' => 'text-amber-700'],
+                                        default         => ['icon' => 'fa-circle-info',    'bg' => 'bg-slate-100',  'fg' => 'text-slate-700'],
                                     };
                                 @endphp
                                 <tr class="hover:bg-slate-50/60 transition-colors">
@@ -133,32 +137,68 @@
                                         </span>
                                     </td>
                                     <td class="px-4 py-3">
-                                        @if($log->client_name || $log->client_email)
-                                            <p class="text-sm font-medium text-slate-900 truncate max-w-[220px]">{{ $log->client_name ?: '—' }}</p>
-                                            @if($log->client_email)
-                                                <p class="text-xs text-slate-500 truncate max-w-[220px]">{{ $log->client_email }}</p>
+                                        @php
+                                            $userName  = $log->user?->name;
+                                            $userEmail = $log->user?->email ?? data_get($log->meta, 'triggered_by');
+                                        @endphp
+                                        @if($userName || $userEmail)
+                                            <p class="text-sm font-medium text-slate-900 truncate max-w-[220px]">{{ $userName ?: $userEmail }}</p>
+                                            @if($userName && $userEmail)
+                                                <p class="text-xs text-slate-500 truncate max-w-[220px]">{{ $userEmail }}</p>
                                             @endif
+                                        @elseif($log->action === 'pdf_download')
+                                            <p class="text-sm text-slate-500 italic">{{ __('Δημόσια λήψη') }}</p>
                                         @else
                                             <span class="text-xs text-slate-400">—</span>
                                         @endif
 
-                                        @if(in_array($log->action, ['email_batch', 'pdf_download'], true))
-                                            @php
-                                                $byName = $log->user?->name ?? data_get($log->meta, 'triggered_by');
-                                            @endphp
-                                            @if($byName)
-                                                <p class="text-[11px] text-slate-500 mt-1 truncate max-w-[220px]" title="{{ $byName }}">
-                                                    <i class="fas fa-user text-[9px] text-slate-400 mr-1"></i>
-                                                    {{ __('από') }} <span class="font-medium text-slate-700">{{ $byName }}</span>
-                                                </p>
-                                            @endif
+                                        @if($log->client_name && in_array($log->action, ['pdf_download', 'client_create'], true))
+                                            <p class="text-[11px] text-slate-500 mt-1 truncate max-w-[220px]" title="{{ $log->client_name }}">
+                                                <i class="fas fa-id-card text-[9px] text-slate-400 mr-1"></i>
+                                                {{ __('πελάτης') }}: <span class="text-slate-700">{{ $log->client_name }}</span>
+                                            </p>
                                         @endif
                                     </td>
                                     <td class="px-4 py-3">
-                                        <span class="text-sm text-slate-700 truncate block max-w-[260px]">{{ $log->subject ?: '—' }}</span>
+                                        @if($log->action === 'client_import')
+                                            @php
+                                                $imp = $log->meta ?? [];
+                                                $filename = $imp['filename'] ?? $log->subject;
+                                                $inserted = (int) ($imp['inserted'] ?? 0);
+                                                $updated  = (int) ($imp['updated']  ?? 0);
+                                                $skipped  = (int) ($imp['skipped']  ?? 0);
+                                            @endphp
+                                            <p class="text-sm text-slate-700 truncate max-w-[260px]" title="{{ $filename }}">
+                                                <i class="fas fa-file-excel text-[11px] text-slate-400 mr-1"></i>
+                                                {{ $filename }}
+                                            </p>
+                                            <div class="flex flex-wrap gap-1 mt-1.5">
+                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700">
+                                                    +{{ $inserted }} {{ __('νέοι') }}
+                                                </span>
+                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-sky-50 text-sky-700">
+                                                    ↻ {{ $updated }} {{ __('ενημερώθηκαν') }}
+                                                </span>
+                                                @if($skipped > 0)
+                                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600">
+                                                        – {{ $skipped }} {{ __('παραλήφθηκαν') }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        @else
+                                            <span class="text-sm text-slate-700 truncate block max-w-[260px]">{{ $log->subject ?: '—' }}</span>
+                                        @endif
                                     </td>
                                     <td class="px-4 py-3">
-                                        <span class="text-xs text-slate-500 font-mono">{{ data_get($log->meta, 'ip', '—') }}</span>
+                                        @php $ip = data_get($log->meta, 'ip'); @endphp
+                                        @if($ip)
+                                            <span class="text-xs text-slate-500 font-mono">{{ $ip }}</span>
+                                            @if($ip === '::1' || $ip === '127.0.0.1')
+                                                <span class="block text-[10px] text-slate-400">{{ __('localhost') }}</span>
+                                            @endif
+                                        @else
+                                            <span class="text-xs text-slate-400">—</span>
+                                        @endif
                                     </td>
                                     <td class="px-6 py-3 text-right tabular-nums">
                                         <span class="text-xs text-slate-500" title="{{ $log->created_at }}">

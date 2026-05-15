@@ -19,9 +19,10 @@ class ClientExcelImporter
     ) {}
 
     /**
-     * Excel header → handler key. Header lookup is case-insensitive.
+     * Known system field aliases (lowercase). Anything not listed here is
+     * treated as a custom field whose name matches the header verbatim.
      */
-    private const HEADERS = [
+    private const SYSTEM_HEADERS = [
         'id'         => 'external_id',
         'name'       => 'name',
         'lastname'   => 'lastname',
@@ -30,13 +31,20 @@ class ClientExcelImporter
         'category'   => 'category',
         'url'        => 'url_slug',
         'slug'       => 'url_slug',
-        'start date' => 'cf:Περίοδος Έναρξης',
-        'startdate'  => 'cf:Περίοδος Έναρξης',
-        'end date'   => 'cf:Περίοδος Λήξης',
-        'enddate'    => 'cf:Περίοδος Λήξης',
-        'title'      => 'cf:Αντικείμενο Προγράμματος',
-        'subject'    => 'cf:Αντικείμενο Προγράμματος',
-        'hours'      => 'cf:Διάρκεια (ώρες)',
+    ];
+
+    /**
+     * English/legacy aliases for well-known custom fields (lowercase header →
+     * custom field name in DB). Lets old import templates keep working.
+     */
+    private const CUSTOM_FIELD_ALIASES = [
+        'start date' => 'Περίοδος Έναρξης',
+        'startdate'  => 'Περίοδος Έναρξης',
+        'end date'   => 'Περίοδος Λήξης',
+        'enddate'    => 'Περίοδος Λήξης',
+        'title'      => 'Αντικείμενο Προγράμματος',
+        'subject'    => 'Αντικείμενο Προγράμματος',
+        'hours'      => 'Διάρκεια (ώρες)',
     ];
 
     public function import(string $path, int $organizationId, ?string $extension = null): array
@@ -52,10 +60,11 @@ class ClientExcelImporter
 
         $categories = CertificateCategory::where('organization_id', $organizationId)
             ->get()->keyBy(fn ($c) => mb_strtolower($c->name));
-        $customFields = ClientCustomField::where('organization_id', $organizationId)
-            ->get()->keyBy('name');
+        $customFields = ClientCustomField::with('categories:id')
+            ->where('organization_id', $organizationId)
+            ->get()->keyBy(fn ($f) => mb_strtolower($f->name));
 
-        $stats = ['inserted' => 0, 'updated' => 0, 'skipped' => 0, 'pdfs_queued' => 0];
+        $stats = ['inserted' => 0, 'updated' => 0, 'skipped' => 0, 'pdfs_queued' => 0, 'custom_skipped' => 0, 'unknown_categories' => []];
         $touched = []; // [client_id => ['was_new' => bool, 'before' => string|null]]
 
         DB::transaction(function () use ($rows, $columnMap, $categories, $customFields, $organizationId, &$stats, &$touched) {
@@ -74,8 +83,8 @@ class ClientExcelImporter
 
                 $client = $this->upsertClient($data, $organizationId, $stats, $existing);
 
-                $category = $this->syncCategory($client, $data, $categories);
-                $this->syncCustomValues($client, $data, $customFields, $organizationId, $category);
+                $category = $this->syncCategory($client, $data, $categories, $stats);
+                $this->syncCustomValues($client, $data, $customFields, $organizationId, $category, $stats);
 
                 if (! isset($touched[$client->id])) {
                     $touched[$client->id] = [
@@ -185,11 +194,25 @@ class ClientExcelImporter
     {
         $map = [];
         foreach ($headerRow as $col => $value) {
-            $key = mb_strtolower(trim((string) $value));
-            if ($key === '') continue;
-            if (isset(self::HEADERS[$key])) {
-                $map[$col] = self::HEADERS[$key];
+            $raw = trim((string) $value);
+            if ($raw === '') continue;
+            $key = mb_strtolower($raw);
+
+            if (isset(self::SYSTEM_HEADERS[$key])) {
+                $map[$col] = self::SYSTEM_HEADERS[$key];
+                continue;
             }
+
+            // Known custom-field aliases resolve to the canonical DB name.
+            if (isset(self::CUSTOM_FIELD_ALIASES[$key])) {
+                $map[$col] = 'cf:' . self::CUSTOM_FIELD_ALIASES[$key];
+                continue;
+            }
+
+            // Anything else is treated as a custom field whose name equals the
+            // raw header. Matching against ClientCustomField is done
+            // case-insensitively in syncCustomValues.
+            $map[$col] = 'cf:' . $raw;
         }
         return $map;
     }
@@ -218,21 +241,36 @@ class ClientExcelImporter
         $isDate = str_contains(mb_strtolower($fieldName), 'περίοδος')
               || str_contains(mb_strtolower($fieldName), 'date');
 
-        if ($isDate) {
-            if (is_numeric($value)) {
-                try {
-                    return ExcelDate::excelToDateTimeObject((float) $value)->format('Y-m-d');
-                } catch (\Throwable $e) {
-                    // fall through
-                }
-            }
-            $ts = strtotime((string) $value);
-            if ($ts !== false) {
-                return date('Y-m-d', $ts);
+        if (! $isDate) {
+            return (string) $value;
+        }
+
+        if (is_numeric($value)) {
+            try {
+                return ExcelDate::excelToDateTimeObject((float) $value)->format('Y-m-d');
+            } catch (\Throwable $e) {
+                // fall through
             }
         }
 
-        return (string) $value;
+        $str = trim((string) $value);
+        if ($str === '') return '';
+
+        // European formats first — PHP's strtotime treats `/` as US M/D/Y,
+        // so "28/03/2025" would otherwise fail and get stored as raw text.
+        foreach (['d/m/Y', 'd/m/y', 'd-m-Y', 'd-m-y', 'd.m.Y', 'd.m.y', 'Y-m-d', 'Y/m/d'] as $fmt) {
+            $dt = \DateTime::createFromFormat('!'.$fmt, $str);
+            if ($dt !== false && $dt->format($fmt) === $str) {
+                return $dt->format('Y-m-d');
+            }
+        }
+
+        $ts = strtotime($str);
+        if ($ts !== false) {
+            return date('Y-m-d', $ts);
+        }
+
+        return $str;
     }
 
     private function isEmptyRow(array $data): bool
@@ -269,33 +307,56 @@ class ClientExcelImporter
         return $client;
     }
 
-    private function syncCategory(Client $client, array $data, $categories): ?CertificateCategory
+    private function syncCategory(Client $client, array $data, $categories, array &$stats): ?CertificateCategory
     {
         if (empty($data['category'])) return null;
 
-        $key = mb_strtolower(trim($data['category']));
+        $raw = trim($data['category']);
+        $key = mb_strtolower($raw);
         $category = $categories->get($key);
-        if (! $category) return null;
+        if (! $category) {
+            // Surface typos like "klarkκ" instead of silently dropping the row's
+            // custom values — the user can't tell from stats alone what went wrong.
+            if (! in_array($raw, $stats['unknown_categories'], true)) {
+                $stats['unknown_categories'][] = $raw;
+            }
+            return null;
+        }
 
         $client->certificateCategories()->syncWithoutDetaching([$category->id]);
         return $category;
     }
 
-    private function syncCustomValues(Client $client, array $data, $customFields, int $organizationId, ?CertificateCategory $category): void
+    private function syncCustomValues(Client $client, array $data, $customFields, int $organizationId, ?CertificateCategory $category, array &$stats): void
     {
         // Custom values are per-certificate (per category). Without a resolved
         // category we have no certificate to attach them to, so skip the row's
         // custom values rather than orphan them.
-        if (! $category) return;
+        if (! $category) {
+            $stats['custom_skipped'] += count($data['custom'] ?? []);
+            return;
+        }
 
         foreach (($data['custom'] ?? []) as $name => $value) {
-            $field = $customFields->get($name);
+            $key   = mb_strtolower($name);
+            $field = $customFields->get($key);
             if (! $field) {
                 $field = ClientCustomField::firstOrCreate(
                     ['organization_id' => $organizationId, 'name' => $name],
-                    ['type' => 'text']
+                    ['type' => 'text', 'applies_to_all' => false, 'is_required' => false]
                 );
-                $customFields->put($name, $field);
+                $field->setRelation('categories', $field->categories()->get(['certificate_categories.id']));
+                $customFields->put($key, $field);
+            }
+
+            // Field scope is inferred from the categories the field appears
+            // under across imports: a same-named header in a new category
+            // extends the field's scope instead of being silently dropped (or
+            // worse — creating a duplicate field). Fields with applies_to_all
+            // already cover every category so we leave their scope alone.
+            if (! $field->applies_to_all && ! $field->categories->contains('id', $category->id)) {
+                $field->categories()->attach($category->id);
+                $field->setRelation('categories', $field->categories->push((object) ['id' => $category->id]));
             }
 
             ClientCustomValue::updateOrCreate(

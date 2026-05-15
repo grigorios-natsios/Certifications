@@ -42,9 +42,9 @@ class PublicCertificateController extends Controller
         ]);
     }
 
-    public function pdf(string $slug, ?string $categorySlug, CertificatePdfStore $store, CertificatePdfRenderer $renderer): Response
+    public function pdf(string $slug, ?string $category, CertificatePdfStore $store, CertificatePdfRenderer $renderer): Response
     {
-        [$client, $category] = $this->resolveClientAndCategory($slug, $categorySlug);
+        [$client, $category] = $this->resolveClientAndCategory($slug, $category);
 
         $path = $store->ensure($client, $category);
 
@@ -54,9 +54,9 @@ class PublicCertificateController extends Controller
         ]);
     }
 
-    public function download(Request $request, string $slug, ?string $categorySlug, CertificatePdfStore $store, CertificatePdfRenderer $renderer): Response
+    public function download(Request $request, string $slug, ?string $category, CertificatePdfStore $store, CertificatePdfRenderer $renderer): Response
     {
-        [$client, $category] = $this->resolveClientAndCategory($slug, $categorySlug);
+        [$client, $category] = $this->resolveClientAndCategory($slug, $category);
 
         $path = $store->ensure($client, $category);
 

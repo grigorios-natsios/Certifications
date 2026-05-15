@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Dashboard;
 
+use App\Models\ActivityLog;
 use App\Models\CertificateCategory;
 use App\Models\Client;
 use App\Services\ClientExcelImporter;
@@ -36,7 +37,8 @@ class Index extends Component
             ],
         ], [], ['importFile' => 'αρχείο']);
 
-        $extension = strtolower($this->importFile->getClientOriginalExtension());
+        $extension    = strtolower($this->importFile->getClientOriginalExtension());
+        $originalName = $this->importFile->getClientOriginalName();
 
         try {
             $stats = $importer->import(
@@ -49,6 +51,22 @@ class Index extends Component
             return;
         }
 
+        ActivityLog::record(ActivityLog::ACTION_CLIENT_IMPORT, [
+            'organization_id' => Auth::user()->organization_id,
+            'user_id'         => Auth::id(),
+            'subject'         => $originalName,
+            'meta' => [
+                'filename'       => $originalName,
+                'inserted'       => $stats['inserted'] ?? 0,
+                'updated'        => $stats['updated'] ?? 0,
+                'skipped'        => $stats['skipped'] ?? 0,
+                'custom_skipped' => $stats['custom_skipped'] ?? 0,
+                'pdfs_queued'    => $stats['pdfs_queued'] ?? 0,
+                'ip'             => request()->ip(),
+                'triggered_by'   => Auth::user()->email,
+            ],
+        ]);
+
         $this->importFile = null;
 
         $parts = [
@@ -56,13 +74,16 @@ class Index extends Component
             "Ενημερώθηκαν: {$stats['updated']}",
             "Παραλείφθηκαν: {$stats['skipped']}",
         ];
+        $customSkipped = $stats['custom_skipped'] ?? 0;
+        if ($customSkipped) $parts[] = "Custom τιμές που αγνοήθηκαν: {$customSkipped}";
         $pdfsQueued = $stats['pdfs_queued'] ?? 0;
         if ($pdfsQueued) $parts[] = "PDF στην ουρά: {$pdfsQueued} (παράγονται στο παρασκήνιο)";
 
+        $unknown = $stats['unknown_categories'] ?? [];
         $this->dispatch(
             'toast',
-            message: implode(', ', $parts),
-            type: 'success'
+            message: implode(', ', $parts) . ($unknown ? ' — Άγνωστες κατηγορίες: ' . implode(', ', $unknown) : ''),
+            type: $unknown ? 'warning' : 'success'
         );
     }
 

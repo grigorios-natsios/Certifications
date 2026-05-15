@@ -128,6 +128,20 @@ class Index extends Component
         $this->resetPage();
     }
 
+    public function getSelectedPdfCountProperty(): int
+    {
+        if (empty($this->selected)) return 0;
+
+        return Client::query()
+            ->where('organization_id', Auth::user()->organization_id)
+            ->whereIn('id', $this->selected)
+            ->withCount(['certificateCategories as pdf_count' => function ($q) {
+                $q->whereNotNull('html_template')->where('html_template', '!=', '');
+            }])
+            ->get()
+            ->sum('pdf_count');
+    }
+
     public function getActiveFilterCountProperty(): int
     {
         $count = 0;

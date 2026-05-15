@@ -9,7 +9,7 @@ class CertificateCategory extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['organization_id', 'name', 'slug', 'html_template'];
+    protected $fillable = ['organization_id', 'name', 'slug', 'html_template', 'orientation'];
 
     protected static function booted(): void
     {
@@ -27,11 +27,6 @@ class CertificateCategory extends Model
     {
         return $this->belongsToMany(Client::class, 'certificate_category_client')
         ->withTimestamps();
-    }
-
-    public function certificates()
-    {
-        return $this->hasMany(Certificate::class, 'category_id');
     }
 
 }
